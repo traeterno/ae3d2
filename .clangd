@@ -1,0 +1,8 @@
+CompileFlags:
+ Compiler: g++,
+ Add: [
+	-target, x86_64-w64-mingw32,
+	-IC:/Projects/ae3d2/include, -Wall
+ ]
+Completion:
+ HeaderInsertion: Never
