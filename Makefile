@@ -1,12 +1,32 @@
 in = -I./include -std=c++17 -Wall
 
-all: bin/ae3d.exe
+ifeq ($(OS),Windows_NT)
+	libs = -lopengl32 -lgdi32 -lws2_32
+	src = src/ae/networkWIN.cpp
+	ext = .exe
+else
+	libs = ""
+	src = src/ae/networkUNIX.cpp
+	ext =
+endif
 
-bin/ae3d.exe: obj/main.o obj/window.o obj/global.o obj/sync.o
-	g++ obj/*.o obj/etc/glad.o -o bin/ae3d.exe -ljsoncpp -lglfw3 -lopengl32 -lgdi32
+all: bin/ae3d$(ext)
+
+bin/server$(ext): obj/server.o obj/network.o obj/global.o
+	g++ $^ -o bin/server$(ext) -ljsoncpp $(libs)
+
+bin/ae3d$(ext): obj/main.o obj/window.o obj/global.o obj/sync.o obj/network.o
+	g++ $^ obj/etc/glad.o -o bin/ae3d$(ext) -ljsoncpp -lglfw3 $(libs)
+
+
 
 obj/main.o: src/main.cpp
 	g++ -c src/main.cpp -o obj/main.o $(in)
+
+obj/server.o: src/server.cpp
+	g++ -c src/server.cpp -o obj/server.o $(in)
+
+
 
 obj/window.o: src/ae/window.cpp
 	g++ -c src/ae/window.cpp -o obj/window.o $(in)
@@ -17,5 +37,10 @@ obj/global.o: src/ae/global.cpp
 obj/sync.o: src/ae/sync.cpp
 	g++ -c src/ae/sync.cpp -o obj/sync.o $(in)
 
+obj/network.o: $(src)
+	g++ -c $(src) -o obj/network.o $(in)
+
+
+
 clean:
-	rm -rf bin/ae3d.exe obj/*.o
+	rm -rf bin/*.exe obj/*.o

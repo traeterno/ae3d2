@@ -1,4 +1,6 @@
 #include <ae/global.hpp>
+#include <ae/types.hpp>
+#include <cstdarg>
 #include <json/json.h>
 #include <json/value.h>
 
@@ -34,4 +36,14 @@ void ae::str::removeAll(std::string &base, std::string part)
 		base.erase(pos, part.length());
 		pos = base.find(part);
 	}
+}
+
+std::string ae::str::format(const char* style, ...)
+{
+	va_list args;
+	char buffer[1024];
+	va_start(args, style);
+	i32 len = vsprintf(buffer, style, args);
+	va_end(args);
+	return std::string(buffer, len);
 }

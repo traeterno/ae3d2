@@ -8,8 +8,6 @@ namespace ae { class Window
 {
 public:
 	Window(std::string cfg, int argc, char* argv[]);
-	void log(std::string s);
-	void error(std::string s);
 	void close();
 	bool isOpen();
 	void update();

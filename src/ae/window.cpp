@@ -2,13 +2,14 @@
 #include <GLFW/glfw3.h>
 #include <ae/window.hpp>
 #include <ae/global.hpp>
-#include <cstdio>
+#include <ae/network.hpp>
 
 using namespace ae;
+using ae::str::format;
 
 Window::~Window()
 {
-	Window::log("Closing the window");
+	printf("Closing the window");
 	if (this->window != nullptr) glfwDestroyWindow(this->window);
 	glfwTerminate();
 }
@@ -16,14 +17,19 @@ Window::~Window()
 Window::Window(std::string path, int argc, char* argv[])
 {
 	auto root = ae::fs::readJSON(path);
-	if (root.empty()) Window::error("The configuration file is empty");
+	if (root.empty()) { printf("The configuration file is empty"); exit(0); }
 
 	this->logging = root["main"]["log"].asBool();
 	if (this->logging) fclose(fopen("res/log.txt", "w"));
 
-	Window::log("Creating the window");
+	printf("Creating the window\n");
 
-	if (!glfwInit()) Window::error("Failed to start GLFW");
+	int result;
+	if (!(result = glfwInit()))
+	{
+		printf("Failed to start GLFW: %i", result);
+		exit(0);
+	}
 
 	int width = root["main"]["size"][0].asInt();
 	int height = root["main"]["size"][1].asInt();
@@ -32,13 +38,18 @@ Window::Window(std::string path, int argc, char* argv[])
 		width, height, root["main"]["title"].asCString(),
 		nullptr, nullptr
 	);
-	if (!this->window) Window::error("Failed to create the window");
+	if (!this->window)
+	{
+		printf("Failed to create the window");
+		exit(0);
+	}
 
 	glfwMakeContextCurrent(this->window);
 	
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
-		Window::error("Failed to load OpenGL");
+		printf("Failed to load OpenGL");
+		exit(0);
 	}
 
 	glfwSetFramebufferSizeCallback(this->window,
@@ -48,28 +59,15 @@ Window::Window(std::string path, int argc, char* argv[])
 	glViewport(0, 0, width, height);
 	glClearColor(0.5, 0.5, 0.5, 1.0);
 
-	Window::log("Created the window");
-}
+	ae::net::init();
 
-void Window::log(std::string s)
-{
-	if (this->logging)
-	{
-		auto f = fopen("res/log.txt", "a");
-		fprintf(f, "%s\n", s.c_str());
-		fclose(f);
-	}
-}
-
-void Window::error(std::string s)
-{
-	Window::log(s);
-	exit(1);
+	printf("Created the window\n");
 }
 
 void Window::close()
 {
 	glfwSetWindowShouldClose(this->window, true);
+	ae::net::shutdown();
 }
 
 bool Window::isOpen()
