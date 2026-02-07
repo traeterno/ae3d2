@@ -15,8 +15,8 @@ all: bin/ae3d$(ext)
 bin/server$(ext): obj/server.o obj/network.o obj/global.o
 	g++ $^ -o bin/server$(ext) -ljsoncpp $(libs)
 
-bin/ae3d$(ext): obj/main.o obj/window.o obj/global.o obj/sync.o obj/network.o
-	g++ $^ obj/etc/glad.o -o bin/ae3d$(ext) -ljsoncpp -lglfw3 $(libs)
+bin/ae3d$(ext): obj/main.o obj/window.o obj/global.o obj/sync.o obj/network.o obj/ui.o obj/bind.o
+	g++ $^ obj/etc/glad.o -o bin/ae3d$(ext) -ljsoncpp -lglfw3 -llua $(libs)
 
 
 
@@ -36,6 +36,12 @@ obj/global.o: src/ae/global.cpp
 
 obj/sync.o: src/ae/sync.cpp
 	g++ -c src/ae/sync.cpp -o obj/sync.o $(in)
+
+obj/ui.o: src/ae/ui.cpp
+	g++ -c src/ae/ui.cpp -o obj/ui.o $(in)
+
+obj/bind.o: src/ae/bind.cpp
+	g++ -c src/ae/bind.cpp -o obj/bind.o $(in)
 
 obj/network.o: $(src)
 	g++ -c $(src) -o obj/network.o $(in)
