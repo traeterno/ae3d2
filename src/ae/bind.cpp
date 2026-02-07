@@ -2,6 +2,7 @@
 #include <ae/window.hpp>
 #include <glm/glm/glm.hpp>
 #include <ae/types.hpp>
+#include <ae/global.hpp>
 
 using namespace ae;
 
@@ -86,12 +87,14 @@ LUA(window_keyPressed)
 	return 1;
 }
 
-// LUA(window_keyJustPressed)
-// {
-// 	auto key = lua_tostring(script, -1);
-// 	lua_pushboolean(script, getWindow(script)->keyJustPressed(key));
-// 	return 1;
-// }
+LUA(window_keyJustPressed)
+{
+	auto key = lua_tostring(script, -1);
+	auto id = ae::input::str2key(key);
+	auto e = getWindow(script)->key;
+	lua_pushboolean(script, id == e.key && e.action == GLFW_PRESS);
+	return 1;
+}
 
 LUA(window_loadUI)
 {
@@ -120,6 +123,7 @@ void ae::bind::window(lua_State *script)
 	insertFunction(script, "close", ae_window_close);
 	insertFunction(script, "clearColor", ae_window_clearColor);
 	insertFunction(script, "keyPressed", ae_window_keyPressed);
+	// insertFunction(script, "keyJustPressed", ae_window_keyJustPressed);
 	insertFunction(script, "loadUI", ae_window_loadUI);
 	insertFunction(script, "size", ae_window_size);
 	insertFunction(script, "uiSize", ae_window_uiSize);

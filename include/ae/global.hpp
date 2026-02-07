@@ -1,6 +1,7 @@
 #ifndef aeGlobal
 #define aeGlobal
 
+#include "ae/types.hpp"
 #include <string>
 #include <json/value.h>
 
@@ -25,6 +26,12 @@ namespace ae::str
 namespace ae::script
 {
 	bool execute(lua_State* s, const char* code);
+	bool runFunction(lua_State* s, const char* name);
+}
+
+namespace ae::input
+{
+	i32 str2key(std::string key);
 }
 
 #endif

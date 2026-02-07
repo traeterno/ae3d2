@@ -6,6 +6,9 @@ global function OnResized()
 end
 
 global function Update()
+	if window.keyJustPressed("F1") then
+		window.loadUI("mainMenu")
+	end
 end
 
 global function Draw()

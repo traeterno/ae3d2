@@ -4,6 +4,8 @@
 #include <json/json.h>
 #include <json/value.h>
 
+#include <glfw/glfw3.h>
+
 extern "C"
 {
 	#include <lua/lauxlib.h>
@@ -63,4 +65,66 @@ bool ae::script::execute(lua_State *s, const char *code)
 		return false;
 	}
 	return true;
+}
+
+bool ae::script::runFunction(lua_State *s, const char *name)
+{
+	if (s == nullptr) { return true; }
+	lua_getglobal(s, "_executor");
+	auto executor = lua_tostring(s, -1);
+	auto type = lua_getglobal(s, name);
+	if (type == LUA_TFUNCTION)
+	{
+		switch (lua_pcallk(s, 0, 0, 0,0, 0))
+		{
+			case LUA_OK: break;
+			default:
+			{
+				printf("Lua \"%s\": failed to call function \"%s\":\n%s\n",
+					executor, name, lua_tostring(s, -1)
+				);
+				return false;
+			} break;
+		}
+	}
+	else if (type != LUA_TNIL)
+	{
+		printf("Lua \"%s\": global \"%s\" is not a function\n",
+			executor, name
+		);
+		return false;
+	}
+	return true;
+}
+
+ae::i32 ae::input::str2key(std::string key)
+{
+	if (key.length() == 1 && key[0] >= 65 && key[0] <= 90) { return key[0]; } // Latin
+	if (key.substr(0, 3) == "Num") { return key[3]; } // Digits
+	if (key[0] == 'F')
+	{
+		if (key.length() == 2) { return GLFW_KEY_F1 + key[1] - 49; }
+		if (key.length() == 3)
+		{
+			return GLFW_KEY_F1 - 1 + std::stoi(key.substr(1, 2));
+		} 
+	}
+	if (key == "Up") return GLFW_KEY_UP;
+	if (key == "Down") return GLFW_KEY_DOWN;
+	if (key == "Left") return GLFW_KEY_LEFT;
+	if (key == "Right") return GLFW_KEY_RIGHT;
+	if (key == "Escape") return GLFW_KEY_ESCAPE;
+	if (key == "Enter") return GLFW_KEY_ENTER;
+	if (key == "Backspace") return GLFW_KEY_BACKSPACE;
+	if (key == "Space") return GLFW_KEY_SPACE;
+	if (key == "LAlt") return GLFW_KEY_LEFT_ALT;
+	if (key == "LShift") return GLFW_KEY_LEFT_SHIFT;
+	if (key == "LCtrl") return GLFW_KEY_LEFT_CONTROL;
+	if (key == "RAlt") return GLFW_KEY_RIGHT_ALT;
+	if (key == "RShift") return GLFW_KEY_RIGHT_SHIFT;
+	if (key == "RCtrl") return GLFW_KEY_RIGHT_CONTROL;
+	if (key == "Minus") return GLFW_KEY_MINUS;
+	if (key == "Equal") return GLFW_KEY_EQUAL;
+	if (key == "Tab") return GLFW_KEY_TAB;
+	return GLFW_KEY_LAST;
 }

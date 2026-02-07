@@ -9,10 +9,19 @@ using namespace ae;
 UI::UI(Window* win)
 {
 	this->window = win;
+	this->state = nullptr;
+	this->init();
+}
+
+void UI::init()
+{
+	if (this->state) { lua_close(this->state); this->state = nullptr; }
 	this->state = luaL_newstate();
 	luaL_openlibs(this->state);
-	lua_pushinteger(this->state, reinterpret_cast<uintptr_t>(win));
+	lua_pushinteger(this->state, reinterpret_cast<uintptr_t>(this->window));
 	lua_setglobal(this->state, "_winptr");
+	lua_pushstring(this->state, "ui");
+	lua_setglobal(this->state, "_executor");
 	printf("Created UI state; Loading functions\n");
 
 	ae::bind::window(this->state);
@@ -23,16 +32,18 @@ UI::UI(Window* win)
 
 UI::~UI()
 {
-	lua_close(this->state);
+	if (this->state != nullptr)
+	{
+		lua_close(this->state);
+		this->state = nullptr;
+	}
 	printf("Destroyed UI\n");
 }
 
 bool UI::load(std::string id)
 {
+	this->init();
 	printf("Loading UI \"%s\"\n", id.c_str());
-	printf("Path is %s",
-		ae::str::format("res/scripts/ui/%s/main.lua\n", id.c_str()).c_str()
-	);
 	std::string src = ae::fs::readText(
 		ae::str::format("res/scripts/ui/%s/main.lua", id.c_str())
 	);
@@ -50,9 +61,11 @@ bool UI::load(std::string id)
 		return false;
 	}
 
-	if (lua_getglobal(this->state, "Init") == LUA_TFUNCTION)
+	if (!ae::script::runFunction(this->state, "Init"))
 	{
-		lua_call(this->state, 0, 0);
+		lua_close(this->state);
+		this->state = nullptr;
+		return false;
 	}
 
 	printf("Finished loading UI \"%s\"\n", id.c_str());
@@ -66,41 +79,33 @@ void UI::requestReload(std::string id)
 
 void UI::update()
 {
-	if (!this->state) { return; }
 	if (!this->reload.empty())
 	{
 		this->load(this->reload);
 		this->reload.clear();
 	}
 
-	if (lua_getglobal(this->state, "Update") != LUA_TFUNCTION)
+	if (!ae::script::runFunction(this->state, "Update"))
 	{
-		printf("Lua error: 'Update' is not a function\n");
 		lua_close(this->state);
 		this->state = nullptr;
-		return;
 	}
-
-	lua_call(this->state, 0, 0);
 }
 
 void UI::render()
 {
-	if (!this->state) { return; }
-	if (lua_getglobal(this->state, "Draw") != LUA_TFUNCTION)
+	if (!ae::script::runFunction(this->state, "Draw"))
 	{
-		printf("Lua error: 'Draw' is not a function\n");
 		lua_close(this->state);
 		this->state = nullptr;
-		return;
 	}
-
-	lua_call(this->state, 0, 0);
 }
 
 void UI::resized()
 {
-	if (!this->state) { return; }
-	if (lua_getglobal(this->state, "OnResized") != LUA_TFUNCTION) return;
-	lua_call(this->state, 0, 0);
+	if (!ae::script::runFunction(this->state, "OnResized"))
+	{
+		lua_close(this->state);
+		this->state = nullptr;
+	}
 }

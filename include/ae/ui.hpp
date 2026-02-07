@@ -26,6 +26,7 @@ public:
 	void render();
 	void resized();
 private:
+	void init();
 	lua_State* state;
 	Window* window;
 	std::string reload;

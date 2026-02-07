@@ -10,6 +10,8 @@
 namespace ae
 {
 
+struct KeyEvent { i32 key; i32 mods; i32 action; };
+
 class Window
 {
 public:
@@ -25,8 +27,8 @@ public:
 	UI* getUI();
 	GLFWwindow* getGLFW();
 	glm::vec2 getBaseSize();
+	KeyEvent key;
 private:
-	i32 keyEvent;
 	glm::vec2 uiSize;
 	GLFWwindow* window;
 	UI ui;
