@@ -4,6 +4,11 @@
 #include <json/json.h>
 #include <json/value.h>
 
+extern "C"
+{
+	#include <lua/lauxlib.h>
+}
+
 std::string ae::fs::readText(std::string path)
 {
 	auto f = fopen(path.c_str(), "r");
@@ -46,4 +51,16 @@ std::string ae::str::format(const char* style, ...)
 	i32 len = vsprintf(buffer, style, args);
 	va_end(args);
 	return std::string(buffer, len);
+}
+
+bool ae::script::execute(lua_State *s, const char *code)
+{
+	int result = luaL_dostring(s, code);
+	if (result == 1)
+	{
+		auto err = lua_tostring(s, -1);
+		printf("Failed to execute code:\n%s\n", err);
+		return false;
+	}
+	return true;
 }
