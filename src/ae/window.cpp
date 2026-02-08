@@ -16,6 +16,7 @@ void resizeCallback(GLFWwindow* win, int w, int h)
 	glViewport(0, 0, w, h);
 	Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(win));
 	window->getUI()->resized();
+	window->getCamera()->resized();
 }
 
 void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
@@ -24,6 +25,11 @@ void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
 	window->key = KeyEvent { .key = key, .mods = mods, .action = action };
 }
 
+UI* Window::getUI() { return &this->ui; }
+GLFWwindow* Window::getGLFW() { return this->window; }
+glm::vec2 Window::getBaseSize() { return this->uiSize; }
+Camera* Window::getCamera() { return &this->cam; }
+
 Window::~Window()
 {
 	printf("Closing the window\n");
@@ -31,7 +37,9 @@ Window::~Window()
 	glfwTerminate();
 }
 
-Window::Window(std::string path, int argc, char* argv[]): ui(UI(this))
+Window::Window(std::string path, int argc, char* argv[]):
+	ui(UI(this)),
+	cam(Camera(this))
 {
 	auto root = ae::fs::readJSON(path);
 	if (root.empty()) { printf("The configuration file is empty"); exit(0); }
@@ -42,6 +50,9 @@ Window::Window(std::string path, int argc, char* argv[]): ui(UI(this))
 		printf("Failed to start GLFW");
 		exit(0);
 	}
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
 	this->uiSize = glm::vec2(
 		root["main"]["uiSize"][0].asFloat(),
@@ -73,9 +84,18 @@ Window::Window(std::string path, int argc, char* argv[]): ui(UI(this))
 		exit(0);
 	}
 
+	printf("Version: %s\nVendor: %s\n",
+		glGetString(GL_VERSION), glGetString(GL_VENDOR)
+	);
+
 	printf("Created the window\n");
 	glViewport(0, 0, width, height);
 	ae::net::init();
+	if (!this->cam.init())
+	{
+		printf("Failed to create the camera\n");
+		exit(0);
+	}
 	if (!this->ui.load(root["main"]["ui"].asCString()))
 	{
 		printf("Can't load the UI; Stopping the engine\n");
@@ -107,6 +127,8 @@ void Window::display()
 void Window::render()
 {
 	this->clear();
+	this->cam.clear();
+	this->cam.display();
 	this->ui.render();
 	this->display();
 }
@@ -123,8 +145,9 @@ void Window::update()
 	this->ui.update();
 }
 
-UI* Window::getUI() { return &this->ui; }
-
-GLFWwindow* Window::getGLFW() { return this->window; }
-
-glm::vec2 Window::getBaseSize() { return this->uiSize; }
+glm::vec2 Window::getSize()
+{
+	i32 w, h;
+	glfwGetWindowSize(this->window, &w, &h);
+	return glm::vec2(w, h);
+}

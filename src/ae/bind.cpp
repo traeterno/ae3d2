@@ -105,9 +105,7 @@ LUA(window_loadUI)
 
 LUA(window_size)
 {
-	i32 w, h;
-	glfwGetWindowSize(getWindow(script)->getGLFW(), &w, &h);
-	vec2_lua(script, glm::vec2(w, h));
+	vec2_lua(script, getWindow(script)->getSize());
 	return 1;
 }
 
@@ -123,7 +121,7 @@ void ae::bind::window(lua_State *script)
 	insertFunction(script, "close", ae_window_close);
 	insertFunction(script, "clearColor", ae_window_clearColor);
 	insertFunction(script, "keyPressed", ae_window_keyPressed);
-	// insertFunction(script, "keyJustPressed", ae_window_keyJustPressed);
+	insertFunction(script, "keyJustPressed", ae_window_keyJustPressed);
 	insertFunction(script, "loadUI", ae_window_loadUI);
 	insertFunction(script, "size", ae_window_size);
 	insertFunction(script, "uiSize", ae_window_uiSize);
