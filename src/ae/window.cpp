@@ -38,8 +38,8 @@ Window::~Window()
 }
 
 Window::Window(std::string path, int argc, char* argv[]):
-	ui(UI(this)),
-	cam(Camera(this))
+	cam(Camera(this)),
+	ui(UI(this))
 {
 	auto root = ae::fs::readJSON(path);
 	if (root.empty()) { printf("The configuration file is empty"); exit(0); }

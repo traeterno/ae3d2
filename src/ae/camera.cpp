@@ -3,14 +3,17 @@
 #include <ae/camera.hpp>
 #include <ae/window.hpp>
 #include <ae/global.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#include <glm/glm/glm.hpp>
-
+#include <glm/gtc/matrix_transform.hpp>
 #include <stdio.h>
 
 using namespace ae;
+
+u32 loadShader(const char* name);
+Texture loadTexture(const char* name);
 
 Camera::Camera(Window* win)
 {
@@ -18,6 +21,11 @@ Camera::Camera(Window* win)
 	this->clearCache();
 	this->currentShader = 0;
 	this->currentTexture = 0;
+	this->currentVAO = 0;
+	this->spriteVAO = 0;
+	this->currentProj = glm::mat4(1.0);
+	this->camView = glm::mat4(1.0);
+	this->currentView = glm::mat4(1.0);
 }
 
 Camera::~Camera()
@@ -30,7 +38,7 @@ Camera::~Camera()
 
 bool Camera::init()
 {
-	this->offscreen = {0, 0, 0, 0, 0};
+	this->offscreen = {0, 0, 0, 0};
 	glGenFramebuffers(1, &this->offscreen.fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, this->offscreen.fbo);
 
@@ -59,8 +67,27 @@ bool Camera::init()
 
 	glGenVertexArrays(1, &this->offscreen.vao);
 	glBindVertexArray(this->offscreen.vao);
-	glGenBuffers(1, &this->offscreen.vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, this->offscreen.vbo);
+	u32 offscreenVBO;
+	glGenBuffers(1, &offscreenVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, offscreenVBO);
+	glBufferData(
+		GL_ARRAY_BUFFER, 8 * sizeof(f32),
+		vertices, GL_STATIC_DRAW
+	);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(
+		0, 2, GL_FLOAT, GL_FALSE,
+		2 * sizeof(f32), 0
+	);
+
+	vertices[0] = 0; vertices[1] = 0;
+	vertices[3] = 0; vertices[6] = 0;
+
+	glGenVertexArrays(1, &this->spriteVAO);
+	glBindVertexArray(this->spriteVAO);
+	u32 spriteVBO;
+	glGenBuffers(1, &spriteVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, spriteVBO);
 	glBufferData(
 		GL_ARRAY_BUFFER, 8 * sizeof(f32),
 		vertices, GL_STATIC_DRAW
@@ -99,6 +126,15 @@ void Camera::resized()
 		GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
 		this->offscreen.depth, 0
 	);
+
+	this->perspective = glm::perspectiveLH(
+		glm::radians(70.0f),
+		size.x / size.y,
+		0.01f, 1000.0f
+	);
+	this->orthographic = glm::ortho(
+		0.0f, size.x, size.y, 0.0f
+	);
 }
 
 void Camera::clearCache()
@@ -119,9 +155,48 @@ void Camera::display()
 	glDisable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	this->shaderUse("offscreen");
-	glBindVertexArray(this->offscreen.vao);
+	this->bindVAO(this->offscreen.vao);
 	glBindTexture(GL_TEXTURE_2D, this->offscreen.tex);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
+
+void Camera::drawSprite()
+{
+	this->bindVAO(this->spriteVAO);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
+
+void Camera::bindVAO(u32 id)
+{
+	if (id == this->currentVAO) return;
+	this->currentVAO = id;
+	glBindVertexArray(this->currentVAO);
+}
+
+void Camera::useProjection(bool p)
+{
+	this->currentProj = p ? this->perspective : this->orthographic;
+}
+
+void Camera::useView(bool cam)
+{
+	this->currentProj = cam ? this->camView : glm::mat4(1.0);
+}
+
+Texture Camera::getTexture(const char* name)
+{
+	auto t = this->textures.find(name);
+	if (t == this->textures.end())
+	{
+		auto tex = loadTexture(name);
+		if (tex.id == 0) { return tex; }
+		printf("Loaded texture \"%s\" as #(%i) %ix%i\n",
+			name, tex.id, tex.width, tex.height
+		);
+		this->textures.insert({ name, tex });
+		return tex;
+	}
+	return t->second;
 }
 
 void Camera::shaderUse(const char* name)
@@ -130,7 +205,7 @@ void Camera::shaderUse(const char* name)
 	u32 newShader;
 	if (x == this->shaders.end())
 	{
-		auto id = this->loadShader(name);
+		auto id = loadShader(name);
 		if (id == 0) { return; }
 		printf("Loaded shader \"%s\" as #(%i)\n", name, id);
 		this->shaders.insert({ name, id });
@@ -140,14 +215,51 @@ void Camera::shaderUse(const char* name)
 	if (newShader == this->currentShader) return;
 	this->currentShader = newShader;
 	glUseProgram(this->currentShader);
+	this->shaderMat4("projection", this->currentProj);
+	this->shaderMat4("view", this->currentView);
 }
 
-void Camera::textureUse(const char* id)
+void Camera::shaderMat4(const char* uniform, glm::mat4 value)
 {
-	// TODO
+	i32 pos = glGetUniformLocation(this->currentShader, uniform);
+	if (pos == -1) return;
+	glUniformMatrix4fv(
+		pos, 1,
+		GL_FALSE, glm::value_ptr(value)
+	);
 }
 
-u32 Camera::loadShader(const char* name)
+void Camera::shaderVec2(const char* uniform, glm::vec2 value)
+{
+	i32 pos = glGetUniformLocation(this->currentShader, uniform);
+	if (pos == -1) return;
+	glUniform2f(pos, value.x, value.y);
+}
+
+
+void Camera::shaderVec4(const char* uniform, glm::vec4 value)
+{
+	i32 pos = glGetUniformLocation(this->currentShader, uniform);
+	if (pos == -1) return;
+	glUniform4f(pos, value.x, value.y, value.z, value.w);
+}
+
+void Camera::shaderInt(const char* uniform, i32 value)
+{
+	i32 pos = glGetUniformLocation(this->currentShader, uniform);;
+	if (pos == -1) return;
+	glUniform1i(pos, value);
+}
+
+void Camera::textureUse(const char* name)
+{
+	auto t = this->getTexture(name);
+	if (this->currentTexture == t.id) return;
+	this->currentTexture = t.id;
+	glBindTexture(GL_TEXTURE_2D, this->currentTexture);
+}
+
+u32 loadShader(const char* name)
 {
 	i32 success; char infoLog[512];
 
@@ -202,8 +314,31 @@ u32 Camera::loadShader(const char* name)
 	return program;
 }
 
-u32 Camera::loadTexture(const char* name)
+Texture loadTexture(const char* name)
 {
-	// TODO
-	return 0;
+	int w, h, channels;
+	u32 id = 0;
+	ae::u8* data = stbi_load(
+		ae::str::format("res/tex/%s.png", name).c_str(),
+		&w, &h, &channels, 0
+	);
+	if (data == nullptr)
+	{
+		printf("Failed to load texture \"%s\"\n", name);
+		return {0, 0, 0};
+	}
+
+	glGenTextures(1, &id);
+	glBindTexture(GL_TEXTURE_2D, id);
+	auto format = (channels == 4 ? GL_RGBA : GL_RGB);
+	glTexImage2D(
+		GL_TEXTURE_2D, 0, format,
+		w, h, 0,
+		format, GL_UNSIGNED_BYTE, data
+	);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	stbi_image_free(data);
+	return { id, (ae::u32)w, (ae::u32)h };
 }

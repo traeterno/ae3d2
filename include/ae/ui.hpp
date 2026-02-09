@@ -14,6 +14,7 @@ namespace ae
 {
 
 class Window;
+class Camera;
 
 class UI
 {
@@ -29,6 +30,7 @@ private:
 	void init();
 	lua_State* state;
 	Window* window;
+	Camera* camera;
 	std::string reload;
 };
 	

@@ -9,6 +9,7 @@ using namespace ae;
 UI::UI(Window* win)
 {
 	this->window = win;
+	this->camera = this->window->getCamera();
 	this->state = nullptr;
 	this->init();
 }
@@ -26,6 +27,7 @@ void UI::init()
 
 	ae::bind::window(this->state);
 	ae::bind::math(this->state);
+	ae::bind::camera(this->state);
 
 	printf("Initialized UI\n");
 }
@@ -49,10 +51,7 @@ bool UI::load(std::string id)
 	);
 	if (src.empty())
 	{
-		printf(
-			"The UI file \"%s\" is empty or not found\n",
-			id.c_str()
-		);
+		printf("The UI file \"%s\" is empty or not found\n", id.c_str());
 		return false;
 	}
 	if (!ae::script::execute(this->state, src.c_str()))
@@ -74,7 +73,7 @@ bool UI::load(std::string id)
 
 void UI::requestReload(std::string id)
 {
-	this->reload = id;
+	this->reload = std::move(id);
 }
 
 void UI::update()
@@ -94,6 +93,7 @@ void UI::update()
 
 void UI::render()
 {
+	this->camera->useProjection(true);
 	if (!ae::script::runFunction(this->state, "Draw"))
 	{
 		lua_close(this->state);

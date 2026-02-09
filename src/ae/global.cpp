@@ -1,9 +1,10 @@
 #include <ae/global.hpp>
 #include <ae/types.hpp>
+
 #include <cstdarg>
 #include <json/json.h>
 #include <json/value.h>
-
+#include <glm/gtc/quaternion.hpp>
 #include <glfw/glfw3.h>
 
 extern "C"
@@ -127,4 +128,21 @@ ae::i32 ae::input::str2key(std::string key)
 	if (key == "Equal") return GLFW_KEY_EQUAL;
 	if (key == "Tab") return GLFW_KEY_TAB;
 	return GLFW_KEY_LAST;
+}
+
+glm::quat ae::math::buildQuat(float yaw, float pitch, float roll, bool global)
+{
+	yaw = glm::radians(yaw);
+	pitch = glm::radians(pitch);
+	roll = glm::radians(roll);
+	glm::quat q(1.0, 0.0, 0.0, 0.0);
+	q = glm::rotate(q, yaw, glm::vec3(0, 1, 0));
+	if (!global)
+	{
+		auto right = glm::vec3(1.0, 0.0, 0.0) * q;
+		q = glm::rotate(q, pitch, right);
+		auto front = glm::vec3(0.0, 0.0, 1.0) * q;
+		q = glm::rotate(q, roll, front);
+	}
+	return q;
 }

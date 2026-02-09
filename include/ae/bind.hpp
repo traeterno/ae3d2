@@ -12,6 +12,7 @@ namespace ae::bind
 {
 	void window(lua_State* script);
 	void math(lua_State* script);
+	void camera(lua_State* script);
 }
 
 #endif

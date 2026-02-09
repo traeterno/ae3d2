@@ -4,7 +4,7 @@
 #include <string>
 #include <GLFW/glfw3.h>
 #include <ae/ui.hpp>
-#include <glm/glm/glm.hpp>
+#include <glm/glm.hpp>
 #include <ae/types.hpp>
 #include <ae/camera.hpp>
 
@@ -35,8 +35,8 @@ public:
 private:
 	glm::vec2 uiSize;
 	GLFWwindow* window;
-	UI ui;
 	Camera cam;
+	UI ui;
 };
 
 }

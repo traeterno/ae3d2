@@ -1,6 +1,8 @@
 #include <ae/bind.hpp>
 #include <ae/window.hpp>
-#include <glm/glm/glm.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/glm.hpp>
 #include <ae/types.hpp>
 #include <ae/global.hpp>
 
@@ -29,10 +31,17 @@ void insertFunction(lua_State* script, std::string name, lua_CFunction f)
 	lua_settable(script, -3);
 }
 
+void insertBoolean(lua_State* script, std::string name, bool f)
+{
+	lua_pushstring(script, name.c_str());
+	lua_pushboolean(script, f);
+	lua_settable(script, -3);
+}
+
 glm::vec2 lua_vec2(lua_State* script)
 {
 	lua_getfield(script, -1, "x");
-	lua_getfield(script, -1, "y");
+	lua_getfield(script, -2, "y");
 	return glm::vec2(
 		lua_tonumber(script, -2),
 		lua_tonumber(script, -1)
@@ -60,10 +69,56 @@ glm::vec3 lua_vec3(lua_State* script)
 
 void vec3_lua(lua_State* script, glm::vec3 v)
 {
-	lua_createtable(script, 0, 2);
+	lua_createtable(script, 0, 3);
 	insertNumber(script, "x", v.x);
 	insertNumber(script, "y", v.y);
 	insertNumber(script, "z", v.z);
+}
+
+glm::vec4 lua_vec4(lua_State* script)
+{
+	lua_getfield(script, -1, "x");
+	lua_getfield(script, -2, "y");
+	lua_getfield(script, -3, "z");
+	lua_getfield(script, -4, "w");
+	return glm::vec4(
+		lua_tonumber(script, -4),
+		lua_tonumber(script, -3),
+		lua_tonumber(script, -2),
+		lua_tonumber(script, -1)
+	);
+}
+
+void vec4_lua(lua_State* script, glm::vec4 v)
+{
+	lua_createtable(script, 0, 4);
+	insertNumber(script, "x", v.x);
+	insertNumber(script, "y", v.y);
+	insertNumber(script, "z", v.z);
+	insertNumber(script, "w", v.w);
+}
+
+glm::quat lua_quat(lua_State* script)
+{
+	lua_getfield(script, -1, "yaw");
+	lua_getfield(script, -2, "pitch");
+	lua_getfield(script, -3, "roll");
+	lua_getfield(script, -4, "global");
+	return ae::math::buildQuat(
+		lua_tonumber(script, -4),
+		lua_tonumber(script, -3),
+		lua_tonumber(script, -2),
+		lua_toboolean(script, -1)
+	);
+}
+
+void quat_lua(lua_State* script, glm::vec3 v, bool g)
+{
+	lua_createtable(script, 0, 4);
+	insertNumber(script, "yaw", v.x);
+	insertNumber(script, "pitch", v.y);
+	insertNumber(script, "roll", v.z);
+	insertBoolean(script, "global", g);
 }
 
 LUA(window_close)
@@ -115,7 +170,7 @@ LUA(window_uiSize)
 	return 1;
 }
 
-void ae::bind::window(lua_State *script)
+void ae::bind::window(lua_State* script)
 {
 	lua_createtable(script, 0, 4);
 	insertFunction(script, "close", ae_window_close);
@@ -125,7 +180,7 @@ void ae::bind::window(lua_State *script)
 	insertFunction(script, "loadUI", ae_window_loadUI);
 	insertFunction(script, "size", ae_window_size);
 	insertFunction(script, "uiSize", ae_window_uiSize);
-	lua_setglobal(script, "window");
+	lua_setglobal(script, "aeWindow");
 }
 
 LUA(math_vec2)
@@ -145,10 +200,122 @@ LUA(math_vec3)
 	return 1;
 }
 
-void ae::bind::math(lua_State *script)
+LUA(math_vec4)
+{
+	float x = lua_tonumber(script, -4);
+	float y = lua_tonumber(script, -3);
+	float z = lua_tonumber(script, -2);
+	float w = lua_tonumber(script, -1);
+	vec4_lua(script, glm::vec4(x, y, z, w));
+	return 1;
+}
+
+LUA(math_quat)
+{
+	float yaw = lua_tonumber(script, -4);
+	float pitch = lua_tonumber(script, -3);
+	float roll = lua_tonumber(script, -2);
+	bool global = lua_toboolean(script, -1);
+	quat_lua(script, glm::vec3(yaw, pitch, roll), global);
+	return 1;
+}
+
+void ae::bind::math(lua_State* script)
 {
 	lua_createtable(script, 0, 2);
 	insertFunction(script, "vec2", ae_math_vec2);
 	insertFunction(script, "vec3", ae_math_vec3);
+	insertFunction(script, "vec4", ae_math_vec4);
+	insertFunction(script, "quat", ae_math_quat);
 	lua_setglobal(script, "aeMath");
+}
+
+LUA(camera_textureUse)
+{
+	auto id = lua_tostring(script, -1);
+	getWindow(script)->getCamera()->textureUse(id);
+	return 0;
+}
+
+LUA(camera_textureSize)
+{
+	auto id = lua_tostring(script, -1);
+	ae::Texture t = getWindow(script)->getCamera()->getTexture(id);
+	vec2_lua(script, glm::vec2(t.width, t.height));
+	return 1;
+}
+
+LUA(camera_shaderUse)
+{
+	auto id = lua_tostring(script, -1);
+	getWindow(script)->getCamera()->shaderUse(id);
+	return 0;
+}
+
+LUA(camera_shaderInt)
+{
+	auto uniform = lua_tostring(script, -2);
+	auto value = lua_tointeger(script, -1);
+	getWindow(script)->getCamera()->shaderInt(uniform, value);
+	return 0;
+}
+
+LUA(camera_shaderVec2)
+{
+	auto uniform = lua_tostring(script, -2);
+	auto value = lua_vec2(script);
+	getWindow(script)->getCamera()->shaderVec2(uniform, value);
+	return 0;
+}
+
+LUA(camera_shaderVec4)
+{
+	auto uniform = lua_tostring(script, -2);
+	auto value = lua_vec4(script);
+	getWindow(script)->getCamera()->shaderVec4(uniform, value);
+	return 0;
+}
+
+LUA(camera_setModelMatrix)
+{
+	lua_getfield(script, -1, "pos");
+	auto pos = lua_vec3(script);
+	lua_getfield(script, -5, "origin");
+	auto origin = lua_vec3(script);
+	lua_getfield(script, -9, "angle");
+	auto angle = lua_quat(script);
+	glm::mat4 ts;
+	ts = glm::translate(glm::mat4(1.0), -origin);
+	ts = glm::mat4(angle) * ts;
+	ts = glm::translate(glm::mat4(1.0), pos) * ts;
+	// TODO check out reference system / stack manipulation
+	getWindow(script)->getCamera()->shaderMat4("model", ts);
+	return 0;
+}
+
+LUA(camera_drawSprite)
+{
+	getWindow(script)->getCamera()->drawSprite();
+	return 0;
+}
+
+LUA(camera_clearCache)
+{
+	getWindow(script)->getCamera()->clearCache();
+	return 0;
+}
+
+void ae::bind::camera(lua_State* script)
+{
+	lua_createtable(script, 0, 1);
+	insertFunction(script, "textureUse", ae_camera_textureUse);
+	insertFunction(script, "setModelMatrix", ae_camera_setModelMatrix);
+	insertFunction(script, "textureSize", ae_camera_textureSize);
+	insertFunction(script, "shaderUse", ae_camera_shaderUse);
+	insertFunction(script, "shaderInt", ae_camera_shaderInt);
+	insertFunction(script, "shaderVec4", ae_camera_shaderVec4);
+	insertFunction(script, "shaderVec2", ae_camera_shaderVec2);
+	insertFunction(script, "drawSprite", ae_camera_drawSprite);
+	insertFunction(script, "clearCache", ae_camera_clearCache);
+	lua_setglobal(script, "aeCamera");
 }
