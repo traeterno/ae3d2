@@ -130,14 +130,14 @@ ae::i32 ae::input::str2key(std::string key)
 	return GLFW_KEY_LAST;
 }
 
-glm::quat ae::math::buildQuat(float yaw, float pitch, float roll, bool global)
+glm::quat ae::math::buildQuat(float yaw, float pitch, float roll, bool relative)
 {
 	yaw = glm::radians(yaw);
 	pitch = glm::radians(pitch);
 	roll = glm::radians(roll);
 	glm::quat q(1.0, 0.0, 0.0, 0.0);
 	q = glm::rotate(q, yaw, glm::vec3(0, 1, 0));
-	if (!global)
+	if (relative)
 	{
 		auto right = glm::vec3(1.0, 0.0, 0.0) * q;
 		q = glm::rotate(q, pitch, right);

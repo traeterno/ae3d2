@@ -10,6 +10,14 @@ using namespace ae;
 
 #define LUA(f) int ae_##f(lua_State* script)
 
+void ae::bind::setup(lua_State* script)
+{
+	lua_getglobal(script, "package");
+	lua_pushstring(script, "path");
+	lua_pushstring(script, "./res/scripts/?.lua");
+	lua_settable(script, -3);
+}
+
 ae::Window* getWindow(lua_State* script)
 {
 	lua_getglobal(script, "_winptr");
@@ -103,7 +111,7 @@ glm::quat lua_quat(lua_State* script)
 	lua_getfield(script, -1, "yaw");
 	lua_getfield(script, -2, "pitch");
 	lua_getfield(script, -3, "roll");
-	lua_getfield(script, -4, "global");
+	lua_getfield(script, -4, "relative");
 	return ae::math::buildQuat(
 		lua_tonumber(script, -4),
 		lua_tonumber(script, -3),
@@ -118,7 +126,7 @@ void quat_lua(lua_State* script, glm::vec3 v, bool g)
 	insertNumber(script, "yaw", v.x);
 	insertNumber(script, "pitch", v.y);
 	insertNumber(script, "roll", v.z);
-	insertBoolean(script, "global", g);
+	insertBoolean(script, "relative", g);
 }
 
 LUA(window_close)
@@ -170,6 +178,13 @@ LUA(window_uiSize)
 	return 1;
 }
 
+LUA(window_dt)
+{
+	auto dt = getWindow(script)->getDeltaTime();
+	lua_pushnumber(script, dt);
+	return 1;
+}
+
 void ae::bind::window(lua_State* script)
 {
 	lua_createtable(script, 0, 4);
@@ -180,54 +195,8 @@ void ae::bind::window(lua_State* script)
 	insertFunction(script, "loadUI", ae_window_loadUI);
 	insertFunction(script, "size", ae_window_size);
 	insertFunction(script, "uiSize", ae_window_uiSize);
+	insertFunction(script, "dt", ae_window_dt);
 	lua_setglobal(script, "aeWindow");
-}
-
-LUA(math_vec2)
-{
-	float x = lua_tonumber(script, -2);
-	float y = lua_tonumber(script, -1);
-	vec2_lua(script, glm::vec2(x, y));
-	return 1;
-}
-
-LUA(math_vec3)
-{
-	float x = lua_tonumber(script, -3);
-	float y = lua_tonumber(script, -2);
-	float z = lua_tonumber(script, -1);
-	vec3_lua(script, glm::vec3(x, y, z));
-	return 1;
-}
-
-LUA(math_vec4)
-{
-	float x = lua_tonumber(script, -4);
-	float y = lua_tonumber(script, -3);
-	float z = lua_tonumber(script, -2);
-	float w = lua_tonumber(script, -1);
-	vec4_lua(script, glm::vec4(x, y, z, w));
-	return 1;
-}
-
-LUA(math_quat)
-{
-	float yaw = lua_tonumber(script, -4);
-	float pitch = lua_tonumber(script, -3);
-	float roll = lua_tonumber(script, -2);
-	bool global = lua_toboolean(script, -1);
-	quat_lua(script, glm::vec3(yaw, pitch, roll), global);
-	return 1;
-}
-
-void ae::bind::math(lua_State* script)
-{
-	lua_createtable(script, 0, 2);
-	insertFunction(script, "vec2", ae_math_vec2);
-	insertFunction(script, "vec3", ae_math_vec3);
-	insertFunction(script, "vec4", ae_math_vec4);
-	insertFunction(script, "quat", ae_math_quat);
-	lua_setglobal(script, "aeMath");
 }
 
 LUA(camera_textureUse)
@@ -282,10 +251,13 @@ LUA(camera_setModelMatrix)
 	auto pos = lua_vec3(script);
 	lua_getfield(script, -5, "origin");
 	auto origin = lua_vec3(script);
-	lua_getfield(script, -9, "angle");
+	lua_getfield(script, -9, "scale");
+	auto scale = lua_vec3(script);
+	lua_getfield(script, -13, "angle");
 	auto angle = lua_quat(script);
 	glm::mat4 ts;
 	ts = glm::translate(glm::mat4(1.0), -origin);
+	ts = glm::scale(glm::mat4(1.0), scale) * ts;
 	ts = glm::mat4(angle) * ts;
 	ts = glm::translate(glm::mat4(1.0), pos) * ts;
 	// TODO check out reference system / stack manipulation

@@ -25,8 +25,8 @@ void UI::init()
 	lua_setglobal(this->state, "_executor");
 	printf("Created UI state; Loading functions\n");
 
+	ae::bind::setup(this->state);
 	ae::bind::window(this->state);
-	ae::bind::math(this->state);
 	ae::bind::camera(this->state);
 
 	printf("Initialized UI\n");
@@ -66,6 +66,7 @@ bool UI::load(std::string id)
 		this->state = nullptr;
 		return false;
 	}
+	this->resized();
 
 	printf("Finished loading UI \"%s\"\n", id.c_str());
 	return true;
@@ -93,7 +94,7 @@ void UI::update()
 
 void UI::render()
 {
-	this->camera->useProjection(true);
+	this->camera->useProjection(false);
 	if (!ae::script::runFunction(this->state, "Draw"))
 	{
 		lua_close(this->state);

@@ -1,33 +1,8 @@
-global record Vec2
-	x: number
-	y: number
-end
-
-global record Vec3
-	x: number
-	y: number
-	z: number
-end
-
-global record Vec4
-	x: number
-	y: number
-	z: number
-	w: number
-end
-
-global record Quaternion
-	yaw: number
-	pitch: number
-	roll: number
-	global: boolean
-end
-
-global record Transform
-	pos: Vec3
-	origin: Vec3
-	angle: Quaternion
-end
+local aeMath = require("aeMath")
+local Vec2 = aeMath.Vec2
+local Vec3 = aeMath.Vec3
+local Vec4 = aeMath.Vec4
+local Transform = aeMath.Transform
 
 global record aeWindow
 	close: function()
@@ -37,13 +12,7 @@ global record aeWindow
 	loadUI: function(string)
 	size: function(): Vec2
 	uiSize: function(): Vec2
-end
-
-global record aeMath
-	vec2: function(number, number): Vec2
-	vec3: function(number, number, number): Vec3
-	vec4: function(number, number, number, number): Vec4
-	quat: function(number, number, number, boolean)
+	dt: function(): number
 end
 
 global record aeCamera

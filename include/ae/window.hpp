@@ -7,6 +7,9 @@
 #include <glm/glm.hpp>
 #include <ae/types.hpp>
 #include <ae/camera.hpp>
+#include <chrono>
+
+using hrc = std::chrono::high_resolution_clock;
 
 namespace ae
 {
@@ -24,6 +27,7 @@ public:
 	void render();
 	bool keyPressed(std::string key);
 	glm::vec2 getSize();
+	f32 getDeltaTime();
 
 	Window(std::string cfg, int argc, char* argv[]);
 	~Window();
@@ -33,6 +37,8 @@ public:
 	Camera* getCamera();
 	KeyEvent key;
 private:
+	std::chrono::time_point<hrc> deltaTimer;
+	f32 deltaTime;
 	glm::vec2 uiSize;
 	GLFWwindow* window;
 	Camera cam;

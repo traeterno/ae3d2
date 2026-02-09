@@ -10,8 +10,8 @@ extern "C"
 
 namespace ae::bind
 {
+	void setup(lua_State* script);
 	void window(lua_State* script);
-	void math(lua_State* script);
 	void camera(lua_State* script);
 }
 

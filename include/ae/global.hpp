@@ -37,7 +37,7 @@ namespace ae::input
 
 namespace ae::math
 {
-	glm::quat buildQuat(float yaw, float pitch, float roll, bool global);
+	glm::quat buildQuat(float yaw, float pitch, float roll, bool relative);
 }
 
 #endif

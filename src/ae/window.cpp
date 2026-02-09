@@ -101,6 +101,8 @@ Window::Window(std::string path, int argc, char* argv[]):
 		printf("Can't load the UI; Stopping the engine\n");
 		exit(0);
 	}
+	this->deltaTimer = hrc::now();
+	this->deltaTime = 0.1f;
 }
 
 void Window::close()
@@ -142,6 +144,11 @@ void Window::update()
 {
 	this->key = {0, 0, 0};
 	glfwPollEvents();
+	auto p = hrc::now();
+	constexpr f32 scaler = 1e-6;
+	this->deltaTime = (f32)(std::chrono::duration_cast<std::chrono::microseconds>
+		(p - this->deltaTimer).count()) * scaler;
+	this->deltaTimer = p;
 	this->ui.update();
 }
 
@@ -150,4 +157,9 @@ glm::vec2 Window::getSize()
 	i32 w, h;
 	glfwGetWindowSize(this->window, &w, &h);
 	return glm::vec2(w, h);
+}
+
+f32 Window::getDeltaTime()
+{
+	return this->deltaTime;
 }

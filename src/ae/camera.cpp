@@ -139,6 +139,8 @@ void Camera::resized()
 
 void Camera::clearCache()
 {
+	for (auto s : this->shaders) glDeleteProgram(s.second);
+	for (auto t : this->textures) glDeleteTextures(1, &t.second.id);
 	this->shaders.clear();
 	this->textures.clear();
 }
@@ -156,6 +158,7 @@ void Camera::display()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	this->shaderUse("offscreen");
 	this->bindVAO(this->offscreen.vao);
+	this->currentTexture = this->offscreen.tex;
 	glBindTexture(GL_TEXTURE_2D, this->offscreen.tex);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }

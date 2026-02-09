@@ -1,19 +1,19 @@
-global ts: Transform
-global texRect: Vec4
-global texSize: Vec2
+local Sprite = require("ui/sprite")
+local aeMath = require("aeMath")
+
+global spr: Sprite
 
 global function Init()
-	aeWindow.clearColor(aeMath.vec3(0.1, 0.2, 0.3))
-	texSize = aeCamera.textureSize("global/icon")
-	ts = {
-		pos = aeMath.vec3(0, 0, 256),
-		origin = aeMath.vec3(texSize.x / 2, texSize.y / 2, 0),
-		angle = aeMath.quat(0, 0, 0, false)
-	}
-	texRect = aeMath.vec4(0, 0, texSize.x, texSize.y)
+	aeWindow.clearColor(aeMath.Vec3.new(0.1, 0.2, 0.3))
+	spr = Sprite.new()
+	spr:setTexture("global/icon")
+	local size = spr:getTextureSize()
+	spr:setOrigin(aeMath.Vec3.new(size.x * 0.5, size.y * 0.5, 0))
 end
 
 global function OnResized()
+	local winSize = aeWindow.size()
+	spr:setPosition(aeMath.Vec3.new(winSize.x * 0.5, winSize.y * 0.5, 0))
 end
 
 global function Update()
@@ -21,15 +21,9 @@ global function Update()
 		aeWindow.loadUI("mainMenu")
 		aeCamera.clearCache()
 	end
-	ts.angle.yaw = ts.angle.yaw + 3
+	spr:rotate(aeMath.Vec3.new(0, 0, 90 * aeWindow.dt()))
 end
 
 global function Draw()
-	aeCamera.shaderUse("sprite")
-	aeCamera.textureUse("global/icon")
-	aeCamera.shaderInt("tex", 0)
-	aeCamera.shaderVec4("rect", texRect)
-	aeCamera.shaderVec2("texSize", texSize)
-	aeCamera.setModelMatrix(ts)
-	aeCamera.drawSprite()
+	spr:draw()
 end
