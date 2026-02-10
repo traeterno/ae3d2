@@ -29,6 +29,9 @@ obj/main.o: src/main.cpp
 obj/server.o: src/server.cpp
 	g++ -c src/server.cpp -o obj/server.o $(in)
 
+obj/etc/glad.o: src/glad.c
+	gcc -c src/glad.c -o obj/etc/glad.o
+
 
 
 obj/window.o: src/ae/window.cpp
