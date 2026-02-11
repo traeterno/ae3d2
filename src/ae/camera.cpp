@@ -23,6 +23,8 @@ Camera::Camera(Window* win)
 	this->currentTexture = 0;
 	this->currentVAO = 0;
 	this->spriteVAO = 0;
+	this->textVAO = 0;
+	this->textInit = false;
 	this->currentProj = glm::mat4(1.0);
 	this->camView = glm::mat4(1.0);
 	this->currentView = glm::mat4(1.0);
@@ -97,6 +99,8 @@ bool Camera::init()
 		0, 2, GL_FLOAT, GL_FALSE,
 		2 * sizeof(f32), 0
 	);
+
+	glGenVertexArrays(1, &this->textVAO);
 	
 	printf("Initialized camera\n");
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -167,6 +171,22 @@ void Camera::drawSprite()
 {
 	this->bindVAO(this->spriteVAO);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
+
+void Camera::drawText(u32 id, usize len)
+{
+	this->bindVAO(this->textVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, id);
+	if (!this->textInit)
+	{
+		this->textInit = true;
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(
+			0, 4, GL_FLOAT, GL_FALSE,
+			4 * sizeof(f32), 0
+		);
+	}
+	glDrawArrays(GL_TRIANGLES, 0, len);
 }
 
 void Camera::bindVAO(u32 id)

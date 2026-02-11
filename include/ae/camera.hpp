@@ -27,6 +27,7 @@ public:
 	void textureUse(const char* id);
 	void bindVAO(u32 id);
 	void drawSprite();
+	void drawText(u32 id, usize len);
 	void useProjection(bool perspective);
 	void useView(bool camera);
 	void shaderUse(const char* id);
@@ -41,7 +42,8 @@ private:
 	Window* window;
 	Offscreen offscreen;
 	u32 currentShader, currentTexture, currentVAO;
-	u32 spriteVAO;
+	u32 spriteVAO, textVAO;
+	bool textInit;
 	// HINT add meshVAO; for drawing meshes, on draw() calls bind VBO+EBO
 	glm::mat4 perspective, orthographic, currentProj;
 	glm::mat4 camView, currentView;

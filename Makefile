@@ -18,7 +18,7 @@ bin/server$(ext):\
 
 bin/ae3d$(ext):\
 		obj/main.o obj/window.o obj/global.o obj/sync.o obj/network.o \
-		obj/ui.o obj/bind.o obj/camera.o
+		obj/ui.o obj/bind.o obj/camera.o obj/font.o
 	g++ $^ obj/etc/glad.o -o bin/ae3d$(ext) -ljsoncpp -lglfw3 -llua $(libs)
 
 
@@ -51,6 +51,9 @@ obj/bind.o: src/ae/bind.cpp
 
 obj/camera.o: src/ae/camera.cpp
 	g++ -c src/ae/camera.cpp -o obj/camera.o $(in)
+
+obj/font.o: src/ae/font.cpp
+	g++ -c src/ae/font.cpp -o obj/font.o $(in)
 
 obj/network.o: $(src)
 	g++ -c $(src) -o obj/network.o $(in)
