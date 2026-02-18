@@ -145,8 +145,10 @@ void Camera::clearCache()
 {
 	for (auto s : this->shaders) glDeleteProgram(s.second);
 	for (auto t : this->textures) glDeleteTextures(1, &t.second.id);
+	for (auto vbo : this->VBOs) glDeleteBuffers(1, &vbo);
 	this->shaders.clear();
 	this->textures.clear();
+	this->VBOs.clear();
 }
 
 void Camera::clear()
@@ -186,7 +188,33 @@ void Camera::drawText(u32 id, usize len)
 			4 * sizeof(f32), 0
 		);
 	}
+	this->shaderUse("text");
+	this->textureUse(this->fontName.c_str());
 	glDrawArrays(GL_TRIANGLES, 0, len);
+}
+
+Texture Camera::setFont(const char* name)
+{
+	this->fontName = ae::str::format("fonts/%s", name);
+	return this->getTexture(this->fontName.c_str());
+}
+
+u32 Camera::createVBO()
+{
+	u32 vbo;
+	glGenBuffers(1, &vbo);
+	this->VBOs.insert(vbo);
+	return vbo;
+}
+
+void Camera::removeVBO(u32 id)
+{
+	auto t = this->VBOs.find(id);
+	if (t != this->VBOs.end())
+	{
+		glDeleteBuffers(1, &id);
+		this->VBOs.erase(t);
+	}
 }
 
 void Camera::bindVAO(u32 id)

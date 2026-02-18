@@ -96,6 +96,8 @@ Window::Window(std::string path, int argc, char* argv[]):
 		printf("Failed to create the camera\n");
 		exit(0);
 	}
+	auto ft = this->cam.setFont(root["main"]["font"].asCString());
+	this->font.load(root["main"]["font"].asCString(), ft);
 	if (!this->ui.load(root["main"]["ui"].asCString()))
 	{
 		printf("Can't load the UI; Stopping the engine\n");
@@ -162,4 +164,9 @@ glm::vec2 Window::getSize()
 f32 Window::getDeltaTime()
 {
 	return this->deltaTime;
+}
+
+text::Font* Window::getFont()
+{
+	return &this->font;
 }

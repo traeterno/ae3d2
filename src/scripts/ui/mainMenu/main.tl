@@ -1,5 +1,7 @@
 local Sprite = require("ui/sprite")
 local aeMath = require("aeMath")
+local textID: number
+local textLen: number
 
 global spr: Sprite
 
@@ -9,6 +11,10 @@ global function Init()
 	spr:setTexture("global/icon")
 	local size = spr:getTextureSize()
 	spr:setOrigin(aeMath.Vec3.new(size.x * 0.5, size.y * 0.5, 0))
+
+	textID = aeCamera.createVBO()
+	textLen = aeCamera.buildText("Heroes of Envell", textID)
+	-- TODO fix unstable font
 end
 
 global function OnResized()
@@ -26,4 +32,5 @@ end
 
 global function Draw()
 	spr:draw()
+	aeCamera.drawText(textID, textLen)
 end

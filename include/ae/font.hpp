@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <string>
 
-namespace ae { struct Texture; class Camera; }
+namespace ae { struct Texture; }
 
 namespace ae::text
 {
@@ -23,7 +23,7 @@ class Font
 public:
 	Font();
 	~Font();
-	void load(const char* id, Camera* cam);
+	void load(const char* id, Texture t);
 	usize build(std::string text);
 private:
 	f32 height;

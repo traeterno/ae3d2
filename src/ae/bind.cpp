@@ -1,3 +1,4 @@
+#include <glad/glad.h>
 #include <ae/bind.hpp>
 #include <ae/window.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -277,6 +278,39 @@ LUA(camera_clearCache)
 	return 0;
 }
 
+LUA(camera_createVBO)
+{
+	auto vbo = getWindow(script)->getCamera()->createVBO();
+	lua_pushnumber(script, vbo);
+	return 1;
+}
+
+LUA(camera_removeVBO)
+{
+	u32 vbo = lua_tonumber(script, -1);
+	getWindow(script)->getCamera()->removeVBO(vbo);
+	return 0;
+}
+
+LUA(camera_buildText)
+{
+	u32 vbo = lua_tonumber(script, -1);
+	std::string str = lua_tostring(script, -2);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	usize len = getWindow(script)->getFont()->build(str);
+	lua_pushnumber(script, len);
+	return 1;
+}
+
+LUA(camera_drawText)
+{
+	usize len = lua_tonumber(script, -1);
+	u32 id = lua_tonumber(script, -2);
+	auto cam = getWindow(script)->getCamera();
+	cam->drawText(id, len);
+	return 0;
+}
+
 void ae::bind::camera(lua_State* script)
 {
 	lua_createtable(script, 0, 1);
@@ -289,5 +323,9 @@ void ae::bind::camera(lua_State* script)
 	insertFunction(script, "shaderVec2", ae_camera_shaderVec2);
 	insertFunction(script, "drawSprite", ae_camera_drawSprite);
 	insertFunction(script, "clearCache", ae_camera_clearCache);
+	insertFunction(script, "createVBO", ae_camera_createVBO);
+	insertFunction(script, "removeVBO", ae_camera_removeVBO);
+	insertFunction(script, "buildText", ae_camera_buildText);
+	insertFunction(script, "drawText", ae_camera_drawText);
 	lua_setglobal(script, "aeCamera");
 }

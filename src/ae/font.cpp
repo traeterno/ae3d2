@@ -16,16 +16,17 @@ Font::~Font()
 	glyphs.clear();
 }
 
-void Font::load(const char* id, Camera* cam)
+void Font::load(const char* id, Texture t)
 {
 	auto f = ae::fs::readJSON(
 		ae::str::format("res/fonts/%s.json", id)
 	);
-	if (f.empty()) { return; }
+	if (f.empty())
+	{
+		printf("ERROR: FONT NOT FOUND\n");
+		return;
+	}
 
-	auto t = cam->getTexture(
-		ae::str::format("fonts/%s", id).c_str()
-	);
 	this->texSize = { t.width, t.height };
 
 	this->name = id;
