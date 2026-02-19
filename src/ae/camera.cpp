@@ -3,11 +3,12 @@
 #include <ae/camera.hpp>
 #include <ae/window.hpp>
 #include <ae/global.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <ae/font.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <stdio.h>
 
 using namespace ae;
@@ -24,10 +25,11 @@ Camera::Camera(Window* win)
 	this->currentVAO = 0;
 	this->spriteVAO = 0;
 	this->textVAO = 0;
-	this->textInit = false;
 	this->currentProj = glm::mat4(1.0);
 	this->camView = glm::mat4(1.0);
 	this->currentView = glm::mat4(1.0);
+	this->font = nullptr;
+	this->rcc = false;
 }
 
 Camera::~Camera()
@@ -101,6 +103,9 @@ bool Camera::init()
 	);
 
 	glGenVertexArrays(1, &this->textVAO);
+	this->bindVAO(this->textVAO);
+	glEnableVertexAttribArray(0);
+	this->bindVAO(0);
 	
 	printf("Initialized camera\n");
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -141,8 +146,15 @@ void Camera::resized()
 	);
 }
 
+void Camera::requestClearCache()
+{
+	this->rcc = true;
+}
+
 void Camera::clearCache()
 {
+	if (!this->rcc) { return; }
+	this->rcc = false;
 	for (auto s : this->shaders) glDeleteProgram(s.second);
 	for (auto t : this->textures) glDeleteTextures(1, &t.second.id);
 	for (auto vbo : this->VBOs) glDeleteBuffers(1, &vbo);
@@ -179,24 +191,28 @@ void Camera::drawText(u32 id, usize len)
 {
 	this->bindVAO(this->textVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, id);
-	if (!this->textInit)
-	{
-		this->textInit = true;
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(
-			0, 4, GL_FLOAT, GL_FALSE,
-			4 * sizeof(f32), 0
-		);
-	}
+	glVertexAttribPointer(
+		0, 4, GL_FLOAT, GL_FALSE,
+		4 * sizeof(f32), 0
+	);
 	this->shaderUse("text");
 	this->textureUse(this->fontName.c_str());
 	glDrawArrays(GL_TRIANGLES, 0, len);
 }
 
-Texture Camera::setFont(const char* name)
+void Camera::setFont(const char* name)
 {
 	this->fontName = ae::str::format("fonts/%s", name);
-	return this->getTexture(this->fontName.c_str());
+	if (this->font != nullptr) delete this->font;
+	this->font = new text::Font(
+		name,
+		this->getTexture(this->fontName.c_str())
+	);
+}
+
+text::Font* Camera::getFont()
+{
+	return this->font;
 }
 
 u32 Camera::createVBO()

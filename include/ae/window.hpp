@@ -6,7 +6,6 @@
 #include <ae/ui.hpp>
 #include <glm/glm.hpp>
 #include <ae/types.hpp>
-#include <ae/font.hpp>
 #include <ae/camera.hpp>
 #include <chrono>
 
@@ -36,7 +35,6 @@ public:
 	GLFWwindow* getGLFW();
 	glm::vec2 getBaseSize();
 	Camera* getCamera();
-	text::Font* getFont();
 	KeyEvent key;
 private:
 	std::chrono::time_point<hrc> deltaTimer;
@@ -45,7 +43,6 @@ private:
 	GLFWwindow* window;
 	Camera cam;
 	UI ui;
-	text::Font font;
 };
 
 }

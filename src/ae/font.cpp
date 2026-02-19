@@ -5,18 +5,7 @@
 
 using namespace ae::text;
 
-Font::Font()
-{
-	name.clear();
-	glyphs.clear();
-}
-
-Font::~Font()
-{
-	glyphs.clear();
-}
-
-void Font::load(const char* id, Texture t)
+Font::Font(const char* id, Texture t)
 {
 	auto f = ae::fs::readJSON(
 		ae::str::format("res/fonts/%s.json", id)
@@ -29,7 +18,6 @@ void Font::load(const char* id, Texture t)
 
 	this->texSize = { t.width, t.height };
 
-	this->name = id;
 	this->height = f["lineHeight"].asFloat();
 	this->glyphs.clear();
 
@@ -48,10 +36,15 @@ void Font::load(const char* id, Texture t)
 	}
 }
 
+Font::~Font()
+{
+	glyphs.clear();
+}
+
 ae::usize Font::build(std::string text)
 {
 	std::vector<glm::vec4> vertices;
-	glm::vec2 pos;
+	glm::vec2 pos = {0.0, 0.0};
 	for (usize i = 0; i < text.length(); i++)
 	{
 		u16 c = 0;

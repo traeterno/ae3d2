@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <ae/types.hpp>
 #include <ae/global.hpp>
+#include <ae/font.hpp>
 
 using namespace ae;
 
@@ -274,7 +275,7 @@ LUA(camera_drawSprite)
 
 LUA(camera_clearCache)
 {
-	getWindow(script)->getCamera()->clearCache();
+	getWindow(script)->getCamera()->requestClearCache();
 	return 0;
 }
 
@@ -297,7 +298,7 @@ LUA(camera_buildText)
 	u32 vbo = lua_tonumber(script, -1);
 	std::string str = lua_tostring(script, -2);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	usize len = getWindow(script)->getFont()->build(str);
+	usize len = getWindow(script)->getCamera()->getFont()->build(str);
 	lua_pushnumber(script, len);
 	return 1;
 }

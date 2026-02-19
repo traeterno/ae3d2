@@ -21,14 +21,12 @@ struct Glyph
 class Font
 {
 public:
-	Font();
+	Font(const char* id, Texture t);
 	~Font();
-	void load(const char* id, Texture t);
 	usize build(std::string text);
 private:
 	f32 height;
 	glm::vec2 texSize;
-	std::string name;
 	std::unordered_map<u16, Glyph> glyphs;
 };
 

@@ -16,6 +16,8 @@ struct Texture { u32 id; u32 width; u32 height; };
 
 struct Offscreen { u32 fbo, tex, depth, vao; };
 
+namespace text { class Font; }
+
 class Camera
 {
 public:
@@ -40,7 +42,9 @@ public:
 	void shaderVec4(const char* uniform, glm::vec4 value);
 	void shaderInt(const char* uniform, i32 value);
 	Texture getTexture(const char* id);
-	Texture setFont(const char* name);
+	void setFont(const char* name);
+	text::Font* getFont();
+	void requestClearCache();
 private:
 	std::unordered_map<const char*, Texture> textures;
 	std::unordered_map<const char*, u32> shaders;
@@ -49,11 +53,12 @@ private:
 	Offscreen offscreen;
 	u32 currentShader, currentTexture, currentVAO;
 	u32 spriteVAO, textVAO;
-	bool textInit;
 	std::string fontName;
 	// HINT add meshVAO; for drawing meshes, on draw() calls bind VBO+EBO
 	glm::mat4 perspective, orthographic, currentProj;
 	glm::mat4 camView, currentView;
+	text::Font* font;
+	bool rcc;
 };
 
 }

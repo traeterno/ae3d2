@@ -14,7 +14,6 @@ global function Init()
 
 	textID = aeCamera.createVBO()
 	textLen = aeCamera.buildText("Heroes of Envell", textID)
-	-- TODO fix unstable font
 end
 
 global function OnResized()
@@ -26,6 +25,7 @@ global function Update()
 	if aeWindow.keyJustPressed("F1") then
 		aeWindow.loadUI("mainMenu")
 		aeCamera.clearCache()
+		print("===REQUESTED RELOAD===")
 	end
 	spr:rotate(aeMath.Vec3.new(0, 0, 90 * aeWindow.dt()))
 end
