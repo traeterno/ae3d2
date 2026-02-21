@@ -41,10 +41,11 @@ Font::~Font()
 	glyphs.clear();
 }
 
-ae::usize Font::build(std::string text)
+glm::vec3 Font::build(std::string text)
 {
 	std::vector<glm::vec4> vertices;
 	glm::vec2 pos = {0.0, 0.0};
+	glm::vec2 bounds = {0.0, 0.0};
 	for (usize i = 0; i < text.length(); i++)
 	{
 		u16 c = 0;
@@ -83,10 +84,15 @@ ae::usize Font::build(std::string text)
 		vertices.push_back(tl); vertices.push_back(tr); vertices.push_back(br);
 		vertices.push_back(br); vertices.push_back(bl); vertices.push_back(tl);
 		pos.x += g.advance;
+		bounds.x = glm::max(bounds.x, br.x);
+		bounds.y = glm::max(bounds.y, br.y);
 	}
 	glBufferData(
 		GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec4),
 		vertices.data(), GL_STATIC_DRAW
 	);
-	return vertices.size();
+	return {
+		vertices.size(),
+		bounds.x, bounds.y
+	};
 }

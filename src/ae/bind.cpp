@@ -298,9 +298,10 @@ LUA(camera_buildText)
 	u32 vbo = lua_tonumber(script, -1);
 	std::string str = lua_tostring(script, -2);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	usize len = getWindow(script)->getCamera()->getFont()->build(str);
-	lua_pushnumber(script, len);
-	return 1;
+	glm::vec3 data = getWindow(script)->getCamera()->getFont()->build(str);
+	lua_pushnumber(script, data.x);
+	vec2_lua(script, glm::vec2(data.y, data.z));
+	return 2;
 }
 
 LUA(camera_drawText)

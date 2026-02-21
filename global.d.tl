@@ -27,6 +27,6 @@ global record aeCamera
 	clearCache: function()
 	createVBO: function(): integer
 	removeVBO: function(integer)
-	buildText: function(string, integer): integer
+	buildText: function(string, integer): integer, Vec2
 	drawText: function(integer, integer)
 end

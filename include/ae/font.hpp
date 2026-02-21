@@ -23,7 +23,7 @@ class Font
 public:
 	Font(const char* id, Texture t);
 	~Font();
-	usize build(std::string text);
+	glm::vec3 build(std::string text);
 private:
 	f32 height;
 	glm::vec2 texSize;

@@ -14,11 +14,17 @@ global function Init()
 
 	txt = Text.new()
 	txt:setString("Heroes of Envell")
+	txt.ts.origin = aeMath.Vec3.new(
+		txt.bounds.x * 0.5,
+		txt.bounds.y * 0.5,
+		0
+	)
 end
 
 global function OnResized()
 	local winSize = aeWindow.size()
 	spr:setPosition(aeMath.Vec3.new(winSize.x * 0.5, winSize.y * 0.5, 0))
+	txt.ts.pos = aeMath.Vec3.new(winSize.x * 0.5, winSize.y * 0.5, 0)
 end
 
 global function Update()
@@ -28,6 +34,7 @@ global function Update()
 		print("===REQUESTED RELOAD===")
 	end
 	spr:rotate(aeMath.Vec3.new(0, 0, 90 * aeWindow.dt()))
+	txt.ts.angle.roll = txt.ts.angle.roll + 90 * aeWindow.dt()
 end
 
 global function Draw()
