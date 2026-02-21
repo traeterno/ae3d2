@@ -334,11 +334,10 @@ LUA(camera_drawText)
 LUA(camera_mouseDelta)
 {
 	auto w = getWindow(script);
+	glm::vec2 m = w->mousePos();
 	glm::vec2 c = w->getSize() * 0.5f;
-	double x, y;
-	glfwGetCursorPos(w->getGLFW(), &x, &y);
 	glfwSetCursorPos(w->getGLFW(), c.x, c.y);
-	vec2_lua(script, glm::vec2(x - c.x, y - c.y));
+	vec2_lua(script, m - c);
 	return 1;
 }
 

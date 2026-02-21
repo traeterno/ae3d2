@@ -60,13 +60,30 @@ Window::Window(std::string path, int argc, char* argv[]):
 		root["main"]["size"][1].asFloat()
 	);
 
-	int width = root["main"]["size"][0].asInt();
-	int height = root["main"]["size"][1].asInt();
-
+	int width, height;
+	if (root["main"]["fullscreen"].asBool())
+	{
+		auto monitor = glfwGetPrimaryMonitor();
+		auto vm = glfwGetVideoMode(monitor);
+		width = vm->width;
+		height = vm->height;
+		glfwWindowHint(GLFW_RED_BITS, vm->redBits);
+		glfwWindowHint(GLFW_GREEN_BITS, vm->greenBits);
+		glfwWindowHint(GLFW_BLUE_BITS, vm->blueBits);
+		glfwWindowHint(GLFW_REFRESH_RATE, vm->refreshRate);
+		glfwWindowHint(GLFW_DECORATED, 0);
+	}
+	else
+	{
+		width = root["main"]["size"][0].asInt();
+		height = root["main"]["size"][1].asInt();
+	}
+	
 	this->window = glfwCreateWindow(
 		width, height, root["main"]["title"].asCString(),
 		nullptr, nullptr
 	);
+
 	if (!this->window)
 	{
 		printf("Failed to create the window");
@@ -172,4 +189,12 @@ f32 Window::getDeltaTime()
 world::World* Window::getWorld()
 {
 	return &this->world;
+}
+
+glm::vec2 Window::mousePos()
+{
+	double x, y;
+	glfwGetCursorPos(this->window, &x, &y);
+	if (glfwGetWindowAttrib(this->window, GLFW_MAXIMIZED)) y += 0.5;
+	return glm::vec2(x, y);
 }

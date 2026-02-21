@@ -29,6 +29,7 @@ public:
 	bool keyPressed(std::string key);
 	glm::vec2 getSize();
 	f32 getDeltaTime();
+	glm::vec2 mousePos();
 
 	Window(std::string cfg, int argc, char* argv[]);
 	~Window();
