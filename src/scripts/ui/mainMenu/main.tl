@@ -1,9 +1,9 @@
 local Sprite = require("ui/sprite")
 local aeMath = require("aeMath")
-local textID: number
-local textLen: number
+local Text = require("ui/text")
 
 global spr: Sprite
+global txt: Text
 
 global function Init()
 	aeWindow.clearColor(aeMath.Vec3.new(0.1, 0.2, 0.3))
@@ -12,8 +12,8 @@ global function Init()
 	local size = spr:getTextureSize()
 	spr:setOrigin(aeMath.Vec3.new(size.x * 0.5, size.y * 0.5, 0))
 
-	textID = aeCamera.createVBO()
-	textLen = aeCamera.buildText("Heroes of Envell", textID)
+	txt = Text.new()
+	txt:setString("Heroes of Envell")
 end
 
 global function OnResized()
@@ -32,5 +32,5 @@ end
 
 global function Draw()
 	spr:draw()
-	aeCamera.drawText(textID, textLen)
+	txt:draw()
 end

@@ -263,7 +263,7 @@ LUA(camera_setModelMatrix)
 	ts = glm::mat4(angle) * ts;
 	ts = glm::translate(glm::mat4(1.0), pos) * ts;
 	// TODO check out reference system / stack manipulation
-	getWindow(script)->getCamera()->shaderMat4("model", ts);
+	getWindow(script)->getCamera()->shaderSetModel(ts);
 	return 0;
 }
 

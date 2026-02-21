@@ -25,8 +25,8 @@ global record aeCamera
 	setModelMatrix: function(Transform)
 	drawSprite: function()
 	clearCache: function()
-	createVBO: function(): number
-	removeVBO: function(number)
-	buildText: function(string, number): number
-	drawText: function(number, number)
+	createVBO: function(): integer
+	removeVBO: function(integer)
+	buildText: function(string, integer): integer
+	drawText: function(integer, integer)
 end

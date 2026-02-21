@@ -36,15 +36,16 @@ public:
 	void useView(bool camera);
 	u32 createVBO();
 	void removeVBO(u32 id);
+	Texture getTexture(const char* id);
+	void setFont(const char* name);
+	text::Font* getFont();
+	void requestClearCache();
 	void shaderUse(const char* id);
 	void shaderMat4(const char* uniform, glm::mat4 value);
 	void shaderVec2(const char* uniform, glm::vec2 value);
 	void shaderVec4(const char* uniform, glm::vec4 value);
 	void shaderInt(const char* uniform, i32 value);
-	Texture getTexture(const char* id);
-	void setFont(const char* name);
-	text::Font* getFont();
-	void requestClearCache();
+	void shaderSetModel(glm::mat4 model);
 private:
 	std::unordered_map<const char*, Texture> textures;
 	std::unordered_map<const char*, u32> shaders;
