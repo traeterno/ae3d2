@@ -334,8 +334,9 @@ void Camera::shaderInt(const char* uniform, i32 value)
 
 void Camera::shaderSetModel(glm::mat4 model)
 {
-	glm::mat4 mat = this->currentProj * this->currentView * model;
-	Camera::shaderMat4("matrix", mat);
+	Camera::shaderMat4("matrix",
+		this->currentProj * this->currentView * model
+	);
 }
 
 void Camera::textureUse(const char* name)

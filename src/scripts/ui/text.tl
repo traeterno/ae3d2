@@ -28,7 +28,7 @@ end
 
 function Text:draw()
 	aeCamera.shaderUse("text")
-	-- aeCamera.setModelMatrix(self.ts)
+	aeCamera.setModelMatrix(self.ts)
 	aeCamera.drawText(self.id, self.len)
 end
 

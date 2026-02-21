@@ -47,8 +47,8 @@ public:
 	void shaderInt(const char* uniform, i32 value);
 	void shaderSetModel(glm::mat4 model);
 private:
-	std::unordered_map<const char*, Texture> textures;
-	std::unordered_map<const char*, u32> shaders;
+	std::unordered_map<std::string, Texture> textures;
+	std::unordered_map<std::string, u32> shaders;
 	std::unordered_set<u32> VBOs;
 	Window* window;
 	Offscreen offscreen;
