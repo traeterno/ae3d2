@@ -18,16 +18,10 @@ void UI::init()
 {
 	if (this->state) { lua_close(this->state); this->state = nullptr; }
 	this->state = luaL_newstate();
-	luaL_openlibs(this->state);
-	lua_pushinteger(this->state, reinterpret_cast<uintptr_t>(this->window));
-	lua_setglobal(this->state, "_winptr");
-	lua_pushstring(this->state, "ui");
-	lua_setglobal(this->state, "_executor");
-	printf("Created UI state; Loading functions\n");
-
-	ae::bind::setup(this->state);
+	ae::bind::setup(this->state, this->window, "ui");
 	ae::bind::window(this->state);
 	ae::bind::camera(this->state);
+	ae::bind::world(this->state);
 
 	printf("Initialized UI\n");
 }
@@ -85,6 +79,8 @@ void UI::update()
 		this->reload.clear();
 	}
 
+	if (this->state == nullptr) { return; }
+
 	if (!ae::script::runFunction(this->state, "Update"))
 	{
 		lua_close(this->state);
@@ -95,6 +91,7 @@ void UI::update()
 void UI::render()
 {
 	this->camera->useProjection(false);
+	this->camera->useView(false);
 	if (!ae::script::runFunction(this->state, "Draw"))
 	{
 		lua_close(this->state);

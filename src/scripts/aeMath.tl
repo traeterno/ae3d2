@@ -72,10 +72,15 @@ function Transform.new(): Transform
 	return self
 end
 
+local function Clamp(x: number, min: number, max: number): number
+	return math.min(math.max(x, min), max)
+end
+
 return {
 	Vec2 = Vec2,
 	Vec3 = Vec3,
 	Vec4 = Vec4,
 	Quat = Quat,
-	Transform = Transform
+	Transform = Transform,
+	clamp = Clamp
 }

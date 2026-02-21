@@ -18,7 +18,8 @@ bin/server$(ext):\
 
 bin/ae3d$(ext):\
 		obj/main.o obj/window.o obj/global.o obj/sync.o obj/network.o \
-		obj/ui.o obj/bind.o obj/camera.o obj/font.o
+		obj/ui.o obj/bind.o obj/camera.o obj/font.o obj/gltf.o \
+		obj/world.o
 	g++ $^ obj/etc/glad.o -o bin/ae3d$(ext) -ljsoncpp -lglfw3 -llua $(libs)
 
 
@@ -32,6 +33,8 @@ obj/server.o: src/server.cpp
 obj/etc/glad.o: src/glad.c
 	gcc -c src/glad.c -o obj/etc/glad.o
 
+obj/network.o: $(src)
+	g++ -c $(src) -o obj/network.o $(in)
 
 
 obj/window.o: src/ae/window.cpp
@@ -55,10 +58,11 @@ obj/camera.o: src/ae/camera.cpp
 obj/font.o: src/ae/font.cpp
 	g++ -c src/ae/font.cpp -o obj/font.o $(in)
 
-obj/network.o: $(src)
-	g++ -c $(src) -o obj/network.o $(in)
+obj/gltf.o: src/ae/gltf.cpp
+	g++ -c src/ae/gltf.cpp -o obj/gltf.o $(in)
 
-
+obj/world.o: src/ae/world.cpp
+	g++ -c src/ae/world.cpp -o obj/world.o $(in)
 
 clean:
 	rm -rf bin/*.exe obj/*.o

@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <ae/types.hpp>
 #include <ae/camera.hpp>
+#include <ae/world.hpp>
 #include <chrono>
 
 using hrc = std::chrono::high_resolution_clock;
@@ -35,6 +36,7 @@ public:
 	GLFWwindow* getGLFW();
 	glm::vec2 getBaseSize();
 	Camera* getCamera();
+	world::World* getWorld();
 	KeyEvent key;
 private:
 	std::chrono::time_point<hrc> deltaTimer;
@@ -43,6 +45,7 @@ private:
 	GLFWwindow* window;
 	Camera cam;
 	UI ui;
+	world::World world;
 };
 
 }

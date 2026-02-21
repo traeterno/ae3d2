@@ -39,7 +39,8 @@ Window::~Window()
 
 Window::Window(std::string path, int argc, char* argv[]):
 	cam(Camera(this)),
-	ui(UI(this))
+	ui(UI(this)),
+	world(world::World(this))
 {
 	auto root = ae::fs::readJSON(path);
 	if (root.empty()) { printf("The configuration file is empty"); exit(0); }
@@ -131,6 +132,7 @@ void Window::render()
 {
 	this->clear();
 	this->cam.clear();
+	this->world.render();
 	this->cam.display();
 	this->ui.render();
 	this->display();
@@ -151,6 +153,7 @@ void Window::update()
 		(p - this->deltaTimer).count()) * scaler;
 	this->deltaTimer = p;
 	this->cam.clearCache();
+	this->world.update();
 	this->ui.update();
 }
 
@@ -164,4 +167,9 @@ glm::vec2 Window::getSize()
 f32 Window::getDeltaTime()
 {
 	return this->deltaTime;
+}
+
+world::World* Window::getWorld()
+{
+	return &this->world;
 }

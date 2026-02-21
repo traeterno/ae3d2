@@ -10,6 +10,7 @@ local record Sprite
 	texture: string
 	texRect: Vec4
 	texSize: Vec2
+	color: Vec4
 end
 
 function Sprite.new(): Sprite
@@ -23,6 +24,7 @@ function Sprite.new(): Sprite
 	self.texture = ""
 	self.texRect = Vec4.new(0, 0, 0, 0)
 	self.texSize = Vec2.new(0, 0)
+	self.color = Vec4.new(1, 1, 1, 1)
 	return self
 end
 
@@ -75,12 +77,14 @@ function Sprite:rotate(angle: Vec3)
 end
 
 function Sprite:draw()
+	if self.texture == "" then return end
 	aeCamera.shaderUse("sprite")
 	aeCamera.textureUse(self.texture)
 	aeCamera.shaderInt("tex", 0)
 	aeCamera.shaderVec4("rect", self.texRect)
 	aeCamera.shaderVec2("texSize", self.texSize)
 	aeCamera.setModelMatrix(self.ts)
+	aeCamera.shaderVec4("clr", self.color)
 	aeCamera.drawSprite()
 end
 

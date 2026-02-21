@@ -120,6 +120,13 @@ elseif mode == "all" then
 	clean()
 	restruct()
 	compile()
+elseif mode == "help" then
+	print("Available commands:")
+	print("clean - remove all files from build path")
+	print("restruct - copy directories hierarchy to build folder")
+	print("compile - compile all source files")
+	print("all - all above")
+	print("[path] - compile provided file")
 else
 	local f = mode
 	print("Building source \""..f.."\".")

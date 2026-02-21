@@ -13,6 +13,7 @@ global record aeWindow
 	size: function(): Vec2
 	uiSize: function(): Vec2
 	dt: function(): number
+	isFocused: function(): boolean
 end
 
 global record aeCamera
@@ -29,4 +30,15 @@ global record aeCamera
 	removeVBO: function(integer)
 	buildText: function(string, integer): integer, Vec2
 	drawText: function(integer, integer)
+	mouseDelta: function(): Vec2
+	buildView: function(table)
+	lookAt: function(table)
 end
+
+global record aeWorld
+	load: function(string)
+	spawn: function(string, string)
+end
+
+global _winptr: integer
+global _executor: string

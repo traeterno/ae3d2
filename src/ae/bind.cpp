@@ -12,8 +12,16 @@ using namespace ae;
 
 #define LUA(f) int ae_##f(lua_State* script)
 
-void ae::bind::setup(lua_State* script)
+void ae::bind::setup(lua_State* script, Window* win, const char* executor)
 {
+	luaL_openlibs(script);
+
+	lua_pushinteger(script, (uintptr_t)win);
+	lua_setglobal(script, "_winptr");
+
+	lua_pushstring(script, executor);
+	lua_setglobal(script, "_executor");
+
 	lua_getglobal(script, "package");
 	lua_pushstring(script, "path");
 	lua_pushstring(script, "./res/scripts/?.lua");
@@ -187,9 +195,18 @@ LUA(window_dt)
 	return 1;
 }
 
+LUA(window_isFocused)
+{
+	lua_pushboolean(script, glfwGetWindowAttrib(
+		getWindow(script)->getGLFW(),
+		GLFW_FOCUSED
+	));
+	return 1;
+}
+
 void ae::bind::window(lua_State* script)
 {
-	lua_createtable(script, 0, 4);
+	lua_createtable(script, 0, 8);
 	insertFunction(script, "close", ae_window_close);
 	insertFunction(script, "clearColor", ae_window_clearColor);
 	insertFunction(script, "keyPressed", ae_window_keyPressed);
@@ -198,6 +215,7 @@ void ae::bind::window(lua_State* script)
 	insertFunction(script, "size", ae_window_size);
 	insertFunction(script, "uiSize", ae_window_uiSize);
 	insertFunction(script, "dt", ae_window_dt);
+	insertFunction(script, "isFocused", ae_window_isFocused);
 	lua_setglobal(script, "aeWindow");
 }
 
@@ -313,9 +331,50 @@ LUA(camera_drawText)
 	return 0;
 }
 
+LUA(camera_mouseDelta)
+{
+	auto w = getWindow(script);
+	glm::vec2 c = w->getSize() * 0.5f;
+	double x, y;
+	glfwGetCursorPos(w->getGLFW(), &x, &y);
+	glfwSetCursorPos(w->getGLFW(), c.x, c.y);
+	vec2_lua(script, glm::vec2(x - c.x, y - c.y));
+	return 1;
+}
+
+LUA(camera_buildView)
+{
+	lua_getfield(script, -1, "pos");
+	auto pos = lua_vec3(script);
+	lua_getfield(script, -5, "orientation");
+	auto a = lua_vec3(script);
+	lua_getfield(script, -9, "distance");
+	float dist = lua_tonumber(script, -1);
+	auto q = ae::math::buildQuat(a.x, a.y, a.z, true);
+	glm::vec3 dir = glm::vec3(0, 0, 1) * q;
+	getWindow(script)->getCamera()->lookAt(
+		dist == 0 ? pos : pos - dir * dist,
+		dist == 0 ? pos + dir : pos,
+		glm::vec3(0, 1, 0) * q
+	);
+	return 0;
+}
+
+LUA(camera_lookAt)
+{
+	lua_getfield(script, -1, "position");
+	auto pos = lua_vec3(script);
+	lua_getfield(script, -5, "target");
+	auto target = lua_vec3(script);
+	getWindow(script)->getCamera()->lookAt(
+		pos, target, glm::vec3(0, 1, 0)
+	);
+	return 0;
+}
+
 void ae::bind::camera(lua_State* script)
 {
-	lua_createtable(script, 0, 1);
+	lua_createtable(script, 0, 16);
 	insertFunction(script, "textureUse", ae_camera_textureUse);
 	insertFunction(script, "setModelMatrix", ae_camera_setModelMatrix);
 	insertFunction(script, "textureSize", ae_camera_textureSize);
@@ -329,5 +388,31 @@ void ae::bind::camera(lua_State* script)
 	insertFunction(script, "removeVBO", ae_camera_removeVBO);
 	insertFunction(script, "buildText", ae_camera_buildText);
 	insertFunction(script, "drawText", ae_camera_drawText);
+	insertFunction(script, "mouseDelta", ae_camera_mouseDelta);
+	insertFunction(script, "buildView", ae_camera_buildView);
+	insertFunction(script, "lookAt", ae_camera_lookAt);
 	lua_setglobal(script, "aeCamera");
+}
+
+LUA(world_load)
+{
+	auto id = lua_tostring(script, -1);
+	getWindow(script)->getWorld()->requestReload(id);
+	return 0;
+}
+
+LUA(world_spawn)
+{
+	auto id = lua_tostring(script, -2);
+	auto name = lua_tostring(script, -1);
+	getWindow(script)->getWorld()->spawn(id, name);
+	return 0;
+}
+
+void ae::bind::world(lua_State* script)
+{
+	lua_createtable(script, 0, 2);
+	insertFunction(script, "load", ae_world_load);
+	insertFunction(script, "spawn", ae_world_spawn);
+	lua_setglobal(script, "aeWorld");
 }

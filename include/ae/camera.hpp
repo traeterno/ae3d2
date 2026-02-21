@@ -40,6 +40,7 @@ public:
 	void setFont(const char* name);
 	text::Font* getFont();
 	void requestClearCache();
+	void lookAt(glm::vec3 eye, glm::vec3 center, glm::vec3 up);
 	void shaderUse(const char* id);
 	void shaderMat4(const char* uniform, glm::mat4 value);
 	void shaderVec2(const char* uniform, glm::vec2 value);

@@ -247,7 +247,12 @@ void Camera::useProjection(bool p)
 
 void Camera::useView(bool cam)
 {
-	this->currentProj = cam ? this->camView : glm::mat4(1.0);
+	this->currentView = cam ? this->camView : glm::mat4(1.0);
+}
+
+void Camera::lookAt(glm::vec3 eye, glm::vec3 center, glm::vec3 up)
+{
+	this->camView = glm::lookAtLH(eye, center, up);
 }
 
 Texture Camera::getTexture(const char* name)
