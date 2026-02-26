@@ -36,6 +36,20 @@ Json::Value ae::fs::readJSON(std::string path)
 	return root;
 }
 
+std::tuple<ae::usize, ae::u8*> ae::fs::readBinary(std::string path)
+{
+	auto f = fopen(path.c_str(), "rb");
+	if (f == nullptr) return {0, nullptr};
+	fseek(f, 0, SEEK_END);
+	auto len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	u8* buf = (u8*)malloc(len);
+	fread(buf, 1, len, f);
+	return {
+		len, buf
+	};
+}
+
 void ae::str::removeAll(std::string &base, std::string part)
 {
 	auto pos = base.find(part);
@@ -145,4 +159,25 @@ glm::quat ae::math::buildQuat(float yaw, float pitch, float roll, bool relative)
 		q = glm::rotate(q, roll, front);
 	}
 	return q;
+}
+
+ae::f32 ae::math::f32(u8* data)
+{
+	ae::f32 f;
+	memcpy(&f, data, sizeof(ae::f32));
+	return f;
+}
+
+ae::u16 ae::math::u16(u8* data)
+{
+	ae::u16 u;
+	memcpy(&u, data, sizeof(ae::u16));
+	return u;
+}
+
+ae::u8* ae::math::toLE(ae::f32 data)
+{
+	u8* octets = new u8[4];
+	memcpy(octets, &data, sizeof(data));
+	return octets;
 }

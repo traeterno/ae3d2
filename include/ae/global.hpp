@@ -15,6 +15,7 @@ namespace ae::fs
 {
 	std::string readText(std::string path);
 	Json::Value readJSON(std::string path);
+	std::tuple<usize, u8*> readBinary(std::string path);
 }
 
 namespace ae::str
@@ -38,6 +39,9 @@ namespace ae::input
 namespace ae::math
 {
 	glm::quat buildQuat(float yaw, float pitch, float roll, bool relative);
+	ae::f32 f32(u8* data);
+	ae::u16 u16(u8* data);
+	u8* toLE(ae::f32 data);
 }
 
 #endif

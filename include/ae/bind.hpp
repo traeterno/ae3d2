@@ -16,6 +16,7 @@ namespace ae::bind
 	void window(lua_State* script);
 	void camera(lua_State* script);
 	void world(lua_State* script);
+	void entity(lua_State* script);
 }
 
 #endif

@@ -137,13 +137,16 @@ void World::spawn(const char* id, const char* name)
 	this->ents.insert({std::string(id), e});
 }
 
-Entity::Entity(ae::Window* win, const char* id, const char* path)
+Entity::Entity(ae::Window* win, const char* id, const char* path):
+	mesh(0, 0)
 {
+	this->window = win;
 	this->state = luaL_newstate();
 	ae::bind::setup(this->state, win, id);
 	ae::bind::window(this->state);
 	ae::bind::camera(this->state);
 	ae::bind::world(this->state);
+	ae::bind::entity(this->state);
 	printf("Loading entity from \"%s\"\n", path);
 	std::string src = ae::fs::readText(ae::str::format(
 		"res/scripts/ents/%s.lua", path
@@ -159,12 +162,18 @@ Entity::Entity(ae::Window* win, const char* id, const char* path)
 		printf("Failed to load entity \"%s\"\n", id);
 		return;
 	}
+
+	this->mesh = mesh::Mesh(
+		win->getCamera()->createVBO(),
+		win->getCamera()->createVBO()
+	);
 }
 
 Entity::~Entity()
 {
 	lua_close(this->state);
 	this->state = nullptr;
+	this->mesh.destroy(this->window->getCamera());
 }
 
 bool Entity::init()
@@ -180,4 +189,9 @@ bool Entity::update()
 bool Entity::render()
 {
 	return ae::script::runFunction(this->state, "Draw");
+}
+
+ae::mesh::Mesh* Entity::getMesh()
+{
+	return &this->mesh;
 }

@@ -25,6 +25,7 @@ Camera::Camera(Window* win)
 	this->currentVAO = 0;
 	this->spriteVAO = 0;
 	this->textVAO = 0;
+	this->meshVAO = 0;
 	this->currentProj = glm::mat4(1.0);
 	this->camView = glm::mat4(1.0);
 	this->currentView = glm::mat4(1.0);
@@ -105,6 +106,10 @@ bool Camera::init()
 	glGenVertexArrays(1, &this->textVAO);
 	this->bindVAO(this->textVAO);
 	glEnableVertexAttribArray(0);
+
+	glGenVertexArrays(1, &this->meshVAO);
+	this->bindVAO(this->meshVAO);
+	glEnableVertexAttribArray(0);
 	this->bindVAO(0);
 	
 	printf("Initialized camera\n");
@@ -158,9 +163,11 @@ void Camera::clearCache()
 	for (auto s : this->shaders) glDeleteProgram(s.second);
 	for (auto t : this->textures) glDeleteTextures(1, &t.second.id);
 	for (auto vbo : this->VBOs) glDeleteBuffers(1, &vbo);
+	for (auto g: this->gltfs) for (auto x: g.second->buffers) delete x.data;
 	this->shaders.clear();
 	this->textures.clear();
 	this->VBOs.clear();
+	this->gltfs.clear();
 }
 
 void Camera::clear()
@@ -253,6 +260,43 @@ void Camera::useView(bool cam)
 void Camera::lookAt(glm::vec3 eye, glm::vec3 center, glm::vec3 up)
 {
 	this->camView = glm::lookAtLH(eye, center, up);
+}
+
+void Camera::loadGLTF(const char* id)
+{
+	auto f = gltf::load(id);
+	if (!f) return;
+	printf("Loaded GLTF \"%s\"\n", id);
+	this->gltfs.insert({id, f});
+}
+
+gltf::GLTF* Camera::getGLTF(const char* id)
+{
+	auto t = this->gltfs.find(id);
+	if (t == this->gltfs.end())
+	{
+		this->loadGLTF(id);
+		t = this->gltfs.find(id);
+	}
+	return t->second;
+}
+
+void Camera::unloadGLTF(const char* id)
+{
+	this->gltfs.erase(id);
+}
+
+void Camera::drawMesh(u32 vbo, u32 ebo, usize len)
+{
+	this->shaderUse("mesh");
+	this->bindVAO(this->meshVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glVertexAttribPointer(
+		0, 3, GL_FLOAT, GL_FALSE,
+		3 * sizeof(f32), 0
+	);
+	glDrawElements(GL_TRIANGLES, len, GL_UNSIGNED_SHORT, 0);
 }
 
 Texture Camera::getTexture(const char* name)

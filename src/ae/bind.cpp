@@ -35,6 +35,13 @@ ae::Window* getWindow(lua_State* script)
 	return reinterpret_cast<ae::Window*>(addr);
 }
 
+ae::world::Entity* getEntity(lua_State* script)
+{
+	lua_getglobal(script, "_executor");
+	std::string exec = lua_tostring(script, -1);
+	return getWindow(script)->getWorld()->getEntity(exec.c_str());
+}
+
 void insertNumber(lua_State* script, std::string name, float v)
 {
 	lua_pushstring(script, name.c_str());
@@ -371,9 +378,23 @@ LUA(camera_lookAt)
 	return 0;
 }
 
+LUA(camera_loadGLTF)
+{
+	auto id = lua_tostring(script, -1);
+	getWindow(script)->getCamera()->loadGLTF(id);
+	return 0;
+}
+
+LUA(camera_unloadGLTF)
+{
+	auto id = lua_tostring(script, -1);
+	getWindow(script)->getCamera()->unloadGLTF(id);
+	return 0;
+}
+
 void ae::bind::camera(lua_State* script)
 {
-	lua_createtable(script, 0, 16);
+	lua_createtable(script, 0, 18);
 	insertFunction(script, "textureUse", ae_camera_textureUse);
 	insertFunction(script, "setModelMatrix", ae_camera_setModelMatrix);
 	insertFunction(script, "textureSize", ae_camera_textureSize);
@@ -390,6 +411,8 @@ void ae::bind::camera(lua_State* script)
 	insertFunction(script, "mouseDelta", ae_camera_mouseDelta);
 	insertFunction(script, "buildView", ae_camera_buildView);
 	insertFunction(script, "lookAt", ae_camera_lookAt);
+	insertFunction(script, "loadGLTF", ae_camera_loadGLTF);
+	insertFunction(script, "unloadGLTF", ae_camera_unloadGLTF);
 	lua_setglobal(script, "aeCamera");
 }
 
@@ -414,4 +437,37 @@ void ae::bind::world(lua_State* script)
 	insertFunction(script, "load", ae_world_load);
 	insertFunction(script, "spawn", ae_world_spawn);
 	lua_setglobal(script, "aeWorld");
+}
+
+LUA(entity_loadMesh)
+{
+	auto glTF = lua_tostring(script, -2);
+	auto id = lua_tostring(script, -1);
+	auto g = getWindow(script)->getCamera()->getGLTF(glTF);
+	getEntity(script)->getMesh()->load(g, id);
+	return 0;
+}
+
+LUA(entity_loadSkeleton)
+{
+	// auto glTF = lua_tostring(script, -2);
+	// auto id = lua_tostring(script, -1);
+	// auto g = getWindow(script)->getCamera()->getGLTF(glTF);
+	// getEntity(script)->
+	return 0;
+}
+
+LUA(entity_drawMesh)
+{
+	getEntity(script)->getMesh()->render(getWindow(script)->getCamera());
+	return 0;
+}
+
+void ae::bind::entity(lua_State* script)
+{
+	lua_createtable(script, 0, 2);
+	insertFunction(script, "loadMesh", ae_entity_loadMesh);
+	insertFunction(script, "loadSkeleton", ae_entity_loadSkeleton);
+	insertFunction(script, "drawMesh", ae_entity_drawMesh);
+	lua_setglobal(script, "aeEntity");
 }

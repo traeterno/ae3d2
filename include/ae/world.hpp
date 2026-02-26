@@ -1,6 +1,7 @@
 #ifndef aeWorld
 #define aeWorld
 
+#include "ae/mesh.hpp"
 #include <string>
 #include <unordered_map>
 extern "C"
@@ -23,8 +24,11 @@ public:
 	bool init();
 	bool update();
 	bool render();
+	mesh::Mesh* getMesh();
 private:
 	lua_State* state;
+	mesh::Mesh mesh;
+	Window* window;
 };
 
 class World

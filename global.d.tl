@@ -33,11 +33,19 @@ global record aeCamera
 	mouseDelta: function(): Vec2
 	buildView: function(table)
 	lookAt: function(table)
+	loadGLTF: function(string)
+	unloadGLTF: function(string)
 end
 
 global record aeWorld
 	load: function(string)
 	spawn: function(string, string)
+end
+
+global record aeEntity
+	loadMesh: function(string, string)
+	loadSkeleton: function(string, string)
+	drawMesh: function()
 end
 
 global _winptr: integer

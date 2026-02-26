@@ -4,6 +4,7 @@ local Camera = require("camera")
 
 global spr: Sprite
 global cam: Camera
+global ts: aeMath.Transform
 
 global function Init()
 	spr = Sprite.new()
@@ -13,7 +14,14 @@ global function Init()
 	spr:setPosition(aeMath.Vec3.new(0, -10, 0))
 	spr:setRotation(aeMath.Quat.new(0, 90, 0, true))
 
+	aeCamera.loadGLTF("cheatCube")
+	aeEntity.loadMesh("cheatCube", "CubeV2")
+	aeEntity.loadSkeleton("cheatCube", "Armature")
+	aeCamera.unloadGLTF("cheatCube")
+
 	cam = Camera.new()
+	ts = aeMath.Transform.new()
+	ts.scale = aeMath.Vec3.new(100, 100, 100)
 end
 
 global function Update()
@@ -22,5 +30,7 @@ global function Update()
 end
 
 global function Draw()
+	aeEntity.drawMesh()
+	aeCamera.setModelMatrix(ts)
 	spr:draw()
 end

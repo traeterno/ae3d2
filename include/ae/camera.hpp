@@ -17,6 +17,7 @@ struct Texture { u32 id; u32 width; u32 height; };
 struct Offscreen { u32 fbo, tex, depth, vao; };
 
 namespace text { class Font; }
+namespace gltf { struct GLTF; }
 
 class Camera
 {
@@ -41,6 +42,11 @@ public:
 	text::Font* getFont();
 	void requestClearCache();
 	void lookAt(glm::vec3 eye, glm::vec3 center, glm::vec3 up);
+	void loadGLTF(const char* id);
+	gltf::GLTF* getGLTF(const char* id);
+	void unloadGLTF(const char* id);
+	void drawMesh(u32 vbo, u32 ebo, usize count);
+
 	void shaderUse(const char* id);
 	void shaderMat4(const char* uniform, glm::mat4 value);
 	void shaderVec2(const char* uniform, glm::vec2 value);
@@ -50,13 +56,13 @@ public:
 private:
 	std::unordered_map<std::string, Texture> textures;
 	std::unordered_map<std::string, u32> shaders;
+	std::unordered_map<std::string, gltf::GLTF*> gltfs;
 	std::unordered_set<u32> VBOs;
 	Window* window;
 	Offscreen offscreen;
 	u32 currentShader, currentTexture, currentVAO;
-	u32 spriteVAO, textVAO;
+	u32 spriteVAO, textVAO, meshVAO;
 	std::string fontName;
-	// HINT add meshVAO; for drawing meshes, on draw() calls bind VBO+EBO
 	glm::mat4 perspective, orthographic, currentProj;
 	glm::mat4 camView, currentView;
 	text::Font* font;
