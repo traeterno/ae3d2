@@ -4,10 +4,12 @@
 
 #include <glad/glad.h>
 
-ae::mesh::Mesh::Mesh(u32 newVBO, u32 newEBO)
+ae::mesh::Mesh::Mesh(ae::Camera* camera)
 {
-	this->vbo = newVBO;
-	this->ebo = newEBO;
+	if (camera == nullptr) return;
+	this->vbo = camera->createVBO();
+	this->ebo = camera->createVBO();
+	this->cam = camera;
 }
 
 ae::mesh::Mesh::~Mesh()
@@ -42,10 +44,31 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 	auto ibv = &file->bufferViews[ia->bufferView];
 	auto ib = &file->buffers[ibv->buffer];
 
+	auto na = &file->accessors[m->normal];
+	auto nbv = &file->bufferViews[na->bufferView];
+	auto nb = &file->buffers[nbv->buffer];
+
+	auto ta = &file->accessors[m->texCoord];
+	auto tbv = &file->bufferViews[ta->bufferView];
+	auto tb = &file->buffers[tbv->buffer];
+
+	auto buf = (u8*)malloc(vbv->byteLength + nbv->byteLength + tbv->byteLength);
+
+	for (usize i = 0 ; i < va->count; i++)
+	{
+		usize offset = i * 8 * sizeof(f32);
+		usize vOffset = vbv->byteOffset + i * 3 * sizeof(f32);
+		usize nOffset = nbv->byteOffset + i * 3 * sizeof(f32);
+		usize tOffset = tbv->byteOffset + i * 2 * sizeof(f32);
+		memcpy(&buf[offset], &vb->data[vOffset], 3 * sizeof(f32));
+		memcpy(&buf[offset + 3 * sizeof(f32)], &nb->data[nOffset], 3 * sizeof(f32));
+		memcpy(&buf[offset + 6 * sizeof(f32)], &tb->data[tOffset], 2 * sizeof(f32));
+	}
+
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferData(
-		GL_ARRAY_BUFFER, vbv->byteLength,
-		&vb->data[vbv->byteOffset], GL_STATIC_DRAW
+		GL_ARRAY_BUFFER, vbv->byteLength + nbv->byteLength + tbv->byteLength,
+		buf, GL_STATIC_DRAW
 	);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -57,21 +80,39 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	this->indices = ia->count;
+
+	auto mat = &file->materials[m->material];
+	printf("Using material \"%s\"\n", mat->name.c_str());
+	auto tex = &file->textures[mat->texture];
+	auto img = &file->images[tex->source];
+	auto sampler = &file->samplers[tex->sampler];
+
+	this->texture = this->cam->getTexture(
+		ae::str::format("meshes/%s", img->name.c_str()).c_str()
+	).id;
+	glBindTexture(GL_TEXTURE_2D, this->texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, sampler->magFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, sampler->magFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sampler->wrapS);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, sampler->wrapT);
 }
 
-void ae::mesh::Mesh::destroy(ae::Camera* cam)
+void ae::mesh::Mesh::destroy()
 {
-	cam->removeVBO(this->vbo);
-	cam->removeVBO(this->ebo);
+	this->cam->removeVBO(this->vbo);
+	this->cam->removeVBO(this->ebo);
+	glDeleteTextures(1, &this->texture);
 	this->vbo = 0;
 	this->ebo = 0;
+	this->texture = 0;
 }
 
-void ae::mesh::Mesh::render(ae::Camera* cam)
+void ae::mesh::Mesh::render()
 {
-	cam->drawMesh(
+	this->cam->drawMesh(
 		this->vbo,
 		this->ebo,
+		this->texture,
 		this->indices
 	);
 }
@@ -195,5 +236,42 @@ ae::gltf::GLTF* ae::gltf::load(const char* id)
 			.material = (u8)p["material"].asUInt()
 		});
 	}
+
+	for (auto x: src["materials"])
+	{
+		f->materials.push_back({
+			.name = x["name"].asString(),
+			.texture = (u8)x["pbrMetallicRoughness"]
+				["baseColorTexture"]["index"].asUInt()
+		});
+	}
+
+	for (auto x: src["textures"])
+	{
+		f->textures.push_back({
+			.sampler = (u8)x["sampler"].asUInt(),
+			.source = (u8)x["source"].asUInt()
+		});
+	}
+
+	for (auto x: src["samplers"])
+	{
+		f->samplers.push_back({
+			.magFilter = (u16)x["magFilter"].asUInt(),
+			.minFilter = (u16)x["minFilter"].asUInt(),
+			.wrapS = (u16)x["wrapS"].asUInt(),
+			.wrapT = (u16)x["wrapT"].asUInt()
+		});
+	}
+
+	for (auto x: src["images"])
+	{
+		f->images.push_back({
+			.mimeType = x["mimeType"].asString(),
+			.name = x["name"].asString(),
+			.uri = x["uri"].asString()
+		});
+	}
+
 	return f;
 }

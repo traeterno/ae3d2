@@ -264,6 +264,14 @@ LUA(camera_shaderVec2)
 	return 0;
 }
 
+LUA(camera_shaderVec3)
+{
+	auto uniform = lua_tostring(script, -2);
+	auto value = lua_vec3(script);
+	getWindow(script)->getCamera()->shaderVec3(uniform, value);
+	return 0;
+}
+
 LUA(camera_shaderVec4)
 {
 	auto uniform = lua_tostring(script, -2);
@@ -394,14 +402,15 @@ LUA(camera_unloadGLTF)
 
 void ae::bind::camera(lua_State* script)
 {
-	lua_createtable(script, 0, 18);
+	lua_createtable(script, 0, 19);
 	insertFunction(script, "textureUse", ae_camera_textureUse);
 	insertFunction(script, "setModelMatrix", ae_camera_setModelMatrix);
 	insertFunction(script, "textureSize", ae_camera_textureSize);
 	insertFunction(script, "shaderUse", ae_camera_shaderUse);
 	insertFunction(script, "shaderInt", ae_camera_shaderInt);
-	insertFunction(script, "shaderVec4", ae_camera_shaderVec4);
 	insertFunction(script, "shaderVec2", ae_camera_shaderVec2);
+	insertFunction(script, "shaderVec3", ae_camera_shaderVec3);
+	insertFunction(script, "shaderVec4", ae_camera_shaderVec4);
 	insertFunction(script, "drawSprite", ae_camera_drawSprite);
 	insertFunction(script, "clearCache", ae_camera_clearCache);
 	insertFunction(script, "createVBO", ae_camera_createVBO);
@@ -459,7 +468,7 @@ LUA(entity_loadSkeleton)
 
 LUA(entity_drawMesh)
 {
-	getEntity(script)->getMesh()->render(getWindow(script)->getCamera());
+	getEntity(script)->getMesh()->render();
 	return 0;
 }
 

@@ -16,15 +16,17 @@ namespace ae::mesh
 class Mesh
 {
 public:
-	Mesh(u32 newVBO, u32 newEBO);
+	Mesh(ae::Camera* cam);
 	~Mesh();
 	void load(gltf::GLTF* file, const char* id);
-	void destroy(Camera* cam);
-	void render(Camera* cam);
+	void destroy();
+	void render();
 private:
 	u32 vbo;
 	u32 ebo;
 	usize indices;
+	u32 texture;
+	ae::Camera* cam;
 };
 
 };
@@ -110,19 +112,6 @@ struct Mesh
 	u8 material;
 };
 
-struct Texture
-{
-	u8 sampler;
-	u8 source;
-};
-
-struct Image
-{
-	std::string mimeType;
-	std::string name;
-	std::string uri;
-};
-
 struct Skin
 {
 	u16 inverseBindMatrices;
@@ -134,6 +123,27 @@ struct Material
 {
 	std::string name;
 	u8 texture;
+};
+
+struct Texture
+{
+	u8 sampler;
+	u8 source;
+};
+
+struct Sampler
+{
+	u16 magFilter;
+	u16 minFilter;
+	u16 wrapS;
+	u16 wrapT;
+};
+
+struct Image
+{
+	std::string mimeType;
+	std::string name;
+	std::string uri;
 };
 
 struct GLTF
@@ -149,6 +159,8 @@ struct GLTF
 	std::vector<Texture> textures;
 	std::vector<Image> images;
 	std::vector<Skin> skins;
+	std::vector<Material> materials;
+	std::vector<Sampler> samplers;
 };
 
 GLTF* load(const char* id);

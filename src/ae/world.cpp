@@ -138,7 +138,7 @@ void World::spawn(const char* id, const char* name)
 }
 
 Entity::Entity(ae::Window* win, const char* id, const char* path):
-	mesh(0, 0)
+	mesh(nullptr)
 {
 	this->window = win;
 	this->state = luaL_newstate();
@@ -163,17 +163,14 @@ Entity::Entity(ae::Window* win, const char* id, const char* path):
 		return;
 	}
 
-	this->mesh = mesh::Mesh(
-		win->getCamera()->createVBO(),
-		win->getCamera()->createVBO()
-	);
+	this->mesh = mesh::Mesh(win->getCamera());
 }
 
 Entity::~Entity()
 {
 	lua_close(this->state);
 	this->state = nullptr;
-	this->mesh.destroy(this->window->getCamera());
+	this->mesh.destroy();
 }
 
 bool Entity::init()

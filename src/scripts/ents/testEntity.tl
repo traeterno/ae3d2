@@ -30,7 +30,9 @@ global function Update()
 end
 
 global function Draw()
-	aeEntity.drawMesh()
+	aeCamera.shaderUse("mesh")
 	aeCamera.setModelMatrix(ts)
+	aeCamera.shaderVec3("camera", cam.direction)
+	aeEntity.drawMesh()
 	spr:draw()
 end

@@ -22,6 +22,7 @@ global record aeCamera
 	shaderUse: function(string)
 	shaderInt: function(string, integer)
 	shaderVec2: function(string, Vec2)
+	shaderVec3: function(string, Vec3)
 	shaderVec4: function(string, Vec4)
 	setModelMatrix: function(Transform)
 	drawSprite: function()

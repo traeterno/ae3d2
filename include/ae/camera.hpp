@@ -45,11 +45,12 @@ public:
 	void loadGLTF(const char* id);
 	gltf::GLTF* getGLTF(const char* id);
 	void unloadGLTF(const char* id);
-	void drawMesh(u32 vbo, u32 ebo, usize count);
+	void drawMesh(u32 vbo, u32 ebo, u32 tex, usize count);
 
 	void shaderUse(const char* id);
 	void shaderMat4(const char* uniform, glm::mat4 value);
 	void shaderVec2(const char* uniform, glm::vec2 value);
+	void shaderVec3(const char* uniform, glm::vec3 value);
 	void shaderVec4(const char* uniform, glm::vec4 value);
 	void shaderInt(const char* uniform, i32 value);
 	void shaderSetModel(glm::mat4 model);

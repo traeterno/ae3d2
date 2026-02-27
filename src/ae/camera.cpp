@@ -110,6 +110,8 @@ bool Camera::init()
 	glGenVertexArrays(1, &this->meshVAO);
 	this->bindVAO(this->meshVAO);
 	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
 	this->bindVAO(0);
 	
 	printf("Initialized camera\n");
@@ -286,15 +288,28 @@ void Camera::unloadGLTF(const char* id)
 	this->gltfs.erase(id);
 }
 
-void Camera::drawMesh(u32 vbo, u32 ebo, usize len)
+void Camera::drawMesh(u32 vbo, u32 ebo, u32 tex, usize len)
 {
 	this->shaderUse("mesh");
 	this->bindVAO(this->meshVAO);
+	if (this->currentTexture != tex)
+	{
+		glBindTexture(GL_TEXTURE_2D, tex);
+		this->currentTexture = tex;
+	}
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glVertexAttribPointer(
 		0, 3, GL_FLOAT, GL_FALSE,
-		3 * sizeof(f32), 0
+		8 * sizeof(f32), 0
+	);
+	glVertexAttribPointer(
+		1, 3, GL_FLOAT, GL_TRUE,
+		8 * sizeof(f32), (void*)(3 * sizeof(f32))
+	);
+	glVertexAttribPointer(
+		2, 2, GL_FLOAT, GL_TRUE,
+		8 * sizeof(f32), (void*)(6 * sizeof(f32))
 	);
 	glDrawElements(GL_TRIANGLES, len, GL_UNSIGNED_SHORT, 0);
 }
@@ -358,6 +373,16 @@ void Camera::shaderVec2(const char* uniform, glm::vec2 value)
 	glUniform2f(pos, value.x, value.y);
 }
 
+void Camera::shaderVec3(const char* uniform, glm::vec3 value)
+{
+	i32 pos = glGetUniformLocation(this->currentShader, uniform);
+	if (pos == -1)
+	{
+		printf("Uniform \"%s\" was not found (Shader #%i)\n", uniform, this->currentShader);
+		return;
+	}
+	glUniform3f(pos, value.x, value.y, value.z);
+}
 
 void Camera::shaderVec4(const char* uniform, glm::vec4 value)
 {
