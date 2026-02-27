@@ -48,11 +48,12 @@ public:
 	void drawMesh(u32 vbo, u32 ebo, u32 tex, usize count);
 
 	void shaderUse(const char* id);
-	void shaderMat4(const char* uniform, glm::mat4 value);
-	void shaderVec2(const char* uniform, glm::vec2 value);
-	void shaderVec3(const char* uniform, glm::vec3 value);
-	void shaderVec4(const char* uniform, glm::vec4 value);
-	void shaderInt(const char* uniform, i32 value);
+	void shaderMat3(const char* uniform, glm::mat3 value, bool warn = true);
+	void shaderMat4(const char* uniform, glm::mat4 value, bool warn = true);
+	void shaderVec2(const char* uniform, glm::vec2 value, bool warn = true);
+	void shaderVec3(const char* uniform, glm::vec3 value, bool warn = true);
+	void shaderVec4(const char* uniform, glm::vec4 value, bool warn = true);
+	void shaderInt(const char* uniform, i32 value, bool warn = true);
 	void shaderSetModel(glm::mat4 model);
 private:
 	std::unordered_map<std::string, Texture> textures;

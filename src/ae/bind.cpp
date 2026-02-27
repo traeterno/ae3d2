@@ -289,13 +289,14 @@ LUA(camera_setModelMatrix)
 	lua_getfield(script, -9, "scale");
 	auto scale = lua_vec3(script);
 	lua_getfield(script, -13, "angle");
-	auto angle = lua_quat(script);
+	auto angle = glm::mat3(lua_quat(script));
 	glm::mat4 ts;
 	ts = glm::translate(glm::mat4(1.0), -origin);
 	ts = glm::scale(glm::mat4(1.0), scale) * ts;
 	ts = glm::mat4(angle) * ts;
 	ts = glm::translate(glm::mat4(1.0), pos) * ts;
 	// TODO check out reference system / stack manipulation
+	getWindow(script)->getCamera()->shaderMat3("rotation", angle, false);
 	getWindow(script)->getCamera()->shaderSetModel(ts);
 	return 0;
 }

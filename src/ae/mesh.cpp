@@ -4,7 +4,7 @@
 
 #include <glad/glad.h>
 
-ae::mesh::Mesh::Mesh(ae::Camera* camera)
+ae::Mesh::Mesh(ae::Camera* camera)
 {
 	if (camera == nullptr) return;
 	this->vbo = camera->createVBO();
@@ -12,13 +12,13 @@ ae::mesh::Mesh::Mesh(ae::Camera* camera)
 	this->cam = camera;
 }
 
-ae::mesh::Mesh::~Mesh()
+ae::Mesh::~Mesh()
 {
 	this->vbo = 0;
 	this->ebo = 0;
 }
 
-void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
+void ae::Mesh::load(ae::gltf::GLTF* file, const char* id)
 {
 	gltf::Node* node = nullptr;
 	for (auto x: file->nodes) if (x.name == id) node = &x;
@@ -97,7 +97,7 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, sampler->wrapT);
 }
 
-void ae::mesh::Mesh::destroy()
+void ae::Mesh::destroy()
 {
 	this->cam->removeVBO(this->vbo);
 	this->cam->removeVBO(this->ebo);
@@ -107,7 +107,7 @@ void ae::mesh::Mesh::destroy()
 	this->texture = 0;
 }
 
-void ae::mesh::Mesh::render()
+void ae::Mesh::render()
 {
 	this->cam->drawMesh(
 		this->vbo,

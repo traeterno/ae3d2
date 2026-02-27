@@ -24,10 +24,10 @@ public:
 	bool init();
 	bool update();
 	bool render();
-	mesh::Mesh* getMesh();
+	Mesh* getMesh();
 private:
 	lua_State* state;
-	mesh::Mesh mesh;
+	Mesh mesh;
 	Window* window;
 };
 

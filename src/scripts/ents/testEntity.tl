@@ -20,12 +20,15 @@ global function Init()
 	aeCamera.unloadGLTF("cheatCube")
 
 	cam = Camera.new()
+	cam.distance = 50
 	ts = aeMath.Transform.new()
 	ts.scale = aeMath.Vec3.new(100, 100, 100)
 end
 
 global function Update()
 	cam:noclip()
+	ts.pos = cam.position
+	ts.angle.yaw = -cam.orientation.x
 	-- cam:apply()
 end
 

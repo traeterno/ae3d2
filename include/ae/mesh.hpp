@@ -6,12 +6,12 @@
 #include <string>
 #include <vector>
 
-namespace ae { class Camera; }
-
 namespace ae::gltf { struct GLTF; }
 
-namespace ae::mesh
+namespace ae
 {
+
+class Camera;
 
 class Mesh
 {
