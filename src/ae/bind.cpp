@@ -473,11 +473,18 @@ LUA(entity_drawMesh)
 	return 0;
 }
 
+LUA(entity_drawSkeleton)
+{
+	getEntity(script)->getSkeleton()->render(getWindow(script)->getCamera());
+	return 0;
+}
+
 void ae::bind::entity(lua_State* script)
 {
-	lua_createtable(script, 0, 2);
+	lua_createtable(script, 0, 4);
 	insertFunction(script, "loadMesh", ae_entity_loadMesh);
 	insertFunction(script, "loadSkeleton", ae_entity_loadSkeleton);
 	insertFunction(script, "drawMesh", ae_entity_drawMesh);
+	insertFunction(script, "drawSkeleton", ae_entity_drawSkeleton);
 	lua_setglobal(script, "aeEntity");
 }

@@ -35,9 +35,15 @@ public:
 	Bone();
 	Bone(gltf::GLTF* file, u16 id);
 	~Bone();
+	void update(glm::mat4 parent);
+	void render(std::vector<glm::vec3>* pts);
 private:
 	std::string name;
 	std::vector<Bone> children;
+	glm::mat4 ts;
+	glm::quat angle;
+	glm::mat4 translation;
+	f32 length;
 };
 
 class Skeleton
@@ -46,9 +52,13 @@ public:
 	Skeleton();
 	~Skeleton();
 	void load(gltf::GLTF* file, u8 id);
+	void update();
+	void render(ae::Camera* cam);
 private:
 	std::vector<glm::mat4> inverseBindMatrices;
+	std::vector<glm::mat4> joints;
 	std::vector<Bone> bones;
+	u32 vbo;
 };
 
 };

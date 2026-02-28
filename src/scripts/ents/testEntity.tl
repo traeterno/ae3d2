@@ -48,6 +48,9 @@ global function Draw()
 	aeCamera.setModelMatrix(ts)
 	aeCamera.shaderVec3("camera", cam.direction)
 	aeEntity.drawMesh()
+	aeCamera.shaderUse("skeleton")
+	aeCamera.setModelMatrix(ts)
+	aeEntity.drawSkeleton()
 	spr:draw()
 end
 

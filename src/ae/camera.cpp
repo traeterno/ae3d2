@@ -112,8 +112,12 @@ bool Camera::init()
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
-	this->bindVAO(0);
 	
+	glGenVertexArrays(1, &this->skeletonVAO);
+	this->bindVAO(this->skeletonVAO);
+	glEnableVertexAttribArray(0);
+	
+	this->bindVAO(0);
 	printf("Initialized camera\n");
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	return true;
@@ -312,6 +316,20 @@ void Camera::drawMesh(u32 vbo, u32 ebo, u32 tex, usize len)
 		8 * sizeof(f32), (void*)(6 * sizeof(f32))
 	);
 	glDrawElements(GL_TRIANGLES, len, GL_UNSIGNED_SHORT, 0);
+}
+
+void Camera::drawSkeleton(u32 vbo, usize len)
+{
+	this->shaderUse("skeleton");
+	this->bindVAO(this->skeletonVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexAttribPointer(
+		0, 3, GL_FLOAT, GL_FALSE,
+		3 * sizeof(f32), 0
+	);
+	glDepthFunc(GL_ALWAYS);
+	glDrawArrays(GL_LINES, 0, len);
+	glDepthFunc(GL_LESS);
 }
 
 Texture Camera::getTexture(const char* name)

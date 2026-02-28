@@ -68,7 +68,7 @@ bool UI::load(std::string id)
 
 void UI::requestReload(std::string id)
 {
-	this->reload = std::move(id);
+	this->reload = id;
 }
 
 void UI::update()

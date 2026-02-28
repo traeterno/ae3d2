@@ -129,7 +129,15 @@ ae::mesh::Bone::Bone(gltf::GLTF* file, u16 id)
 	auto n = &file->nodes[id];
 	
 	this->name = n->name;
-	printf("#%i: \"%s\"\n", id, this->name.c_str());
+	
+	this->angle = n->rotation;
+	this->translation = glm::translate(glm::mat4(1.0), n->translation);
+
+	if (!n->children.empty())
+	{
+		this->length = glm::length(file->nodes[n->children[0]].translation);
+	}
+	else { this->length = 0.1; }
 
 	for (u16 childID: n->children)
 	{
@@ -142,16 +150,39 @@ ae::mesh::Bone::~Bone()
 	this->children.clear();
 }
 
+void ae::mesh::Bone::update(glm::mat4 parent)
+{
+	if (parent == glm::mat4(1.0)) parent = this->translation;
+	this->ts = parent * glm::mat4_cast(this->angle);
+	auto t = glm::translate(glm::mat4(1.0), glm::vec3(0, this->length, 0));
+	for (usize i = 0; i < this->children.size(); i++)
+	{
+		this->children[i].update(this->ts * t);
+	}
+}
+
+void ae::mesh::Bone::render(std::vector<glm::vec3>* pts)
+{
+	auto p1 = this->ts * glm::vec4(0, 0, 0, 1);
+	auto p2 = this->ts * glm::vec4(0, this->length, 0, 1);
+	pts->push_back(glm::vec3(p1.x, p1.y, p1.z));
+	pts->push_back(glm::vec3(p2.x, p2.y, p2.z));
+	for (auto b: this->children) b.render(pts);
+	// TODO inherit transformation
+}
+
 ae::mesh::Skeleton::Skeleton()
 {
 	this->inverseBindMatrices = {};
 	this->bones = {};
+	glGenBuffers(1, &this->vbo);
 }
 
 ae::mesh::Skeleton::~Skeleton()
 {
 	this->inverseBindMatrices.clear();
 	this->bones.clear();
+	glDeleteBuffers(1, &this->vbo);
 }
 
 void ae::mesh::Skeleton::load(gltf::GLTF* file, u8 id)
@@ -193,6 +224,30 @@ void ae::mesh::Skeleton::load(gltf::GLTF* file, u8 id)
 	}
 
 	// https://github.com/traeterno/envell3d/blob/master/src/ae3d/Skeleton.rs
+}
+
+void ae::mesh::Skeleton::render(ae::Camera* cam)
+{
+	this->update();
+	std::vector<glm::vec3> points;
+	for (usize i = 0; i < this->bones.size(); i++)
+	{
+		this->bones[i].render(&points);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
+	glBufferData(
+		GL_ARRAY_BUFFER, points.size() * sizeof(f32) * 3,
+		points.data(), GL_STATIC_DRAW
+	);
+	cam->drawSkeleton(this->vbo, points.size());
+}
+
+void ae::mesh::Skeleton::update()
+{
+	for (usize i = 0; i < this->bones.size(); i++)
+	{
+		this->bones[i].update(glm::mat4(1.0));
+	}
 }
 
 ae::gltf::GLTF* ae::gltf::load(const char* id)
