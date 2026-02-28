@@ -163,7 +163,7 @@ Entity::Entity(ae::Window* win, const char* id, const char* path):
 		return;
 	}
 
-	this->mesh = Mesh(win->getCamera());
+	this->mesh = mesh::Mesh(win->getCamera());
 }
 
 Entity::~Entity()
@@ -188,7 +188,12 @@ bool Entity::render()
 	return ae::script::runFunction(this->state, "Draw");
 }
 
-ae::Mesh* Entity::getMesh()
+ae::mesh::Mesh* Entity::getMesh()
 {
 	return &this->mesh;
+}
+
+ae::mesh::Skeleton* Entity::getSkeleton()
+{
+	return &this->skeleton;
 }

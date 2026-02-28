@@ -8,6 +8,7 @@ local record Camera
 	cursorLock: boolean
 	direction: aeMath.Vec3
 	front: aeMath.Vec2
+	speed: number
 end
 
 function Camera.new(): Camera
@@ -19,6 +20,7 @@ function Camera.new(): Camera
 	self.cursorLock = false
 	self.direction = aeMath.Vec3.new(0, 0, 1)
 	self.front = aeMath.Vec2.new(0, 1)
+	self.speed = 1
 	aeCamera.lookAt({
 		position = self.position,
 		target = self.direction
@@ -68,9 +70,37 @@ function Camera:noclip()
 		self.front.y * input.z + self.front.x * input.x
 	)
 
-	self.position.x = self.position.x + movement.x
-	self.position.y = self.position.y + movement.y
-	self.position.z = self.position.z + movement.z
+	self.position.x = self.position.x + movement.x * self.speed
+	self.position.y = self.position.y + movement.y * self.speed
+	self.position.z = self.position.z + movement.z * self.speed
+
+	aeCamera.buildView({
+		pos = self.position,
+		orientation = self.orientation,
+		distance = self.distance
+	})
+end
+
+function Camera:rotate()
+	if not aeWindow.isFocused() then return end
+	self.cursorLock = false
+	
+	local deltaAngle = aeCamera.mouseDelta()
+	self.orientation.x = (self.orientation.x - deltaAngle.x * self.sensitivity) % 360.0
+	self.orientation.y = aeMath.clamp(
+		self.orientation.y - deltaAngle.y * self.sensitivity, -80, 80
+	)
+
+	self:buildAxes()
+	aeCamera.buildView({
+		pos = self.position,
+		orientation = self.orientation,
+		distance = self.distance
+	})
+end
+
+function Camera:follow(point: aeMath.Vec3, height: number)
+	self.position = aeMath.Vec3.new(point.x, point.y + height, point.z)
 
 	aeCamera.buildView({
 		pos = self.position,

@@ -4,7 +4,7 @@
 
 #include <glad/glad.h>
 
-ae::Mesh::Mesh(ae::Camera* camera)
+ae::mesh::Mesh::Mesh(ae::Camera* camera)
 {
 	if (camera == nullptr) return;
 	this->vbo = camera->createVBO();
@@ -12,16 +12,16 @@ ae::Mesh::Mesh(ae::Camera* camera)
 	this->cam = camera;
 }
 
-ae::Mesh::~Mesh()
+ae::mesh::Mesh::~Mesh()
 {
 	this->vbo = 0;
 	this->ebo = 0;
 }
 
-void ae::Mesh::load(ae::gltf::GLTF* file, const char* id)
+void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 {
 	gltf::Node* node = nullptr;
-	for (auto x: file->nodes) if (x.name == id) node = &x;
+	for (auto x: file->nodes) if (x.name == id) { node = &x; break; }
 	if (!node)
 	{
 		printf("Error: Node \"%s\" not found\n", id);
@@ -81,6 +81,8 @@ void ae::Mesh::load(ae::gltf::GLTF* file, const char* id)
 
 	this->indices = ia->count;
 
+	if (m->material == U8_MAX) return;
+
 	auto mat = &file->materials[m->material];
 	printf("Using material \"%s\"\n", mat->name.c_str());
 	auto tex = &file->textures[mat->texture];
@@ -97,7 +99,7 @@ void ae::Mesh::load(ae::gltf::GLTF* file, const char* id)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, sampler->wrapT);
 }
 
-void ae::Mesh::destroy()
+void ae::mesh::Mesh::destroy()
 {
 	this->cam->removeVBO(this->vbo);
 	this->cam->removeVBO(this->ebo);
@@ -107,7 +109,7 @@ void ae::Mesh::destroy()
 	this->texture = 0;
 }
 
-void ae::Mesh::render()
+void ae::mesh::Mesh::render()
 {
 	this->cam->drawMesh(
 		this->vbo,
@@ -115,6 +117,82 @@ void ae::Mesh::render()
 		this->texture,
 		this->indices
 	);
+}
+
+ae::mesh::Bone::Bone()
+{
+	this->children = {};
+}
+
+ae::mesh::Bone::Bone(gltf::GLTF* file, u16 id)
+{
+	auto n = &file->nodes[id];
+	
+	this->name = n->name;
+	printf("#%i: \"%s\"\n", id, this->name.c_str());
+
+	for (u16 childID: n->children)
+	{
+		this->children.push_back(Bone(file, childID));
+	}
+}
+
+ae::mesh::Bone::~Bone()
+{
+	this->children.clear();
+}
+
+ae::mesh::Skeleton::Skeleton()
+{
+	this->inverseBindMatrices = {};
+	this->bones = {};
+}
+
+ae::mesh::Skeleton::~Skeleton()
+{
+	this->inverseBindMatrices.clear();
+	this->bones.clear();
+}
+
+void ae::mesh::Skeleton::load(gltf::GLTF* file, u8 id)
+{
+	auto skin = &file->skins[id];
+
+	auto ma = &file->accessors[skin->inverseBindMatrices];
+	auto mbv = &file->bufferViews[ma->bufferView];
+	auto mb = &file->buffers[mbv->buffer];
+
+	this->inverseBindMatrices = std::vector<glm::mat4>(ma->count, glm::mat4(1.0));
+	for (usize i = 0; i < ma->count; i++)
+	{
+		this->inverseBindMatrices[i] =
+			*(glm::mat4*)&mb->data[mbv->byteOffset+16*sizeof(f32)*i];
+	}
+
+	std::unordered_map<u16, bool> children;
+	for (u16 id: skin->joints)
+	{
+		children.insert({id, false});
+	}
+
+	for (u16 id: skin->joints)
+	{
+		for (u16 x: file->nodes[id].children)
+		{
+			children.insert_or_assign(x, true);
+		}
+	}
+
+	for (auto [id, is]: children)
+	{
+		if (!is)
+		{
+			printf("Loading bone #%u as root\n", id);
+			this->bones.push_back(Bone(file, id));
+		}
+	}
+
+	// https://github.com/traeterno/envell3d/blob/master/src/ae3d/Skeleton.rs
 }
 
 ae::gltf::GLTF* ae::gltf::load(const char* id)
@@ -190,8 +268,8 @@ ae::gltf::GLTF* ae::gltf::load(const char* id)
 			.translation = glm::vec3(),
 			.scale = glm::vec3()
 		};
-		if (x["mesh"].isUInt()) { n.mesh = x["mesh"].asUInt(); }
-		if (x["skin"].isUInt()) { n.skin = x["skin"].asUInt(); }
+		if (!x["mesh"].isNull()) n.mesh = x["mesh"].asUInt();
+		if (!x["skin"].isNull()) n.skin = x["skin"].asUInt();
 		if (x["rotation"].isArray())
 		{
 			auto r = x["rotation"];
@@ -233,7 +311,7 @@ ae::gltf::GLTF* ae::gltf::load(const char* id)
 			.joints = (u16)a["JOINTS_0"].asUInt(),
 			.weights = (u16)a["WEIGHTS_0"].asUInt(),
 			.indices = (u16)p["indices"].asUInt(),
-			.material = (u8)p["material"].asUInt()
+			.material = p["material"].isNull() ? U8_MAX : (u8)p["material"].asUInt()
 		});
 	}
 
@@ -270,6 +348,17 @@ ae::gltf::GLTF* ae::gltf::load(const char* id)
 			.mimeType = x["mimeType"].asString(),
 			.name = x["name"].asString(),
 			.uri = x["uri"].asString()
+		});
+	}
+
+	for (auto x: src["skins"])
+	{
+		std::vector<u16> joints;
+		for (auto y: x["joints"]) joints.push_back(y.asUInt());
+		f->skins.push_back({
+			.inverseBindMatrices = (u8)x["inverseBindMatrices"].asUInt(),
+			.joints = joints,
+			.name = x["name"].asString()
 		});
 	}
 

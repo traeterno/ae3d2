@@ -76,11 +76,28 @@ local function Clamp(x: number, min: number, max: number): number
 	return math.min(math.max(x, min), max)
 end
 
+local function Lerp(a: number, b: number, t: number): number
+	return a * (1 - t) + b * t
+end
+
+local function Cycle(x: number, cycle: number): number
+	while x < 0 do x = x + cycle end
+	return x % cycle
+end
+
+local function RotationLerp(a: number, b: number, t: number): number
+	local angle = ((((b - a) % 360) + 540) % 360) - 180
+	return a + angle * t
+end
+
 return {
 	Vec2 = Vec2,
 	Vec3 = Vec3,
 	Vec4 = Vec4,
 	Quat = Quat,
 	Transform = Transform,
-	clamp = Clamp
+	clamp = Clamp,
+	lerp = Lerp,
+	cycle = Cycle,
+	rotationLerp = RotationLerp
 }

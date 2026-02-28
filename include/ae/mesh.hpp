@@ -6,12 +6,12 @@
 #include <string>
 #include <vector>
 
+namespace ae { class Camera; }
+
 namespace ae::gltf { struct GLTF; }
 
-namespace ae
+namespace ae::mesh
 {
-
-class Camera;
 
 class Mesh
 {
@@ -27,6 +27,28 @@ private:
 	usize indices;
 	u32 texture;
 	ae::Camera* cam;
+};
+
+class Bone
+{
+public:
+	Bone();
+	Bone(gltf::GLTF* file, u16 id);
+	~Bone();
+private:
+	std::string name;
+	std::vector<Bone> children;
+};
+
+class Skeleton
+{
+public:
+	Skeleton();
+	~Skeleton();
+	void load(gltf::GLTF* file, u8 id);
+private:
+	std::vector<glm::mat4> inverseBindMatrices;
+	std::vector<Bone> bones;
 };
 
 };

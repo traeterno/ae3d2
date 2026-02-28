@@ -45,7 +45,7 @@ end
 
 global record aeEntity
 	loadMesh: function(string, string)
-	loadSkeleton: function(string, string)
+	loadSkeleton: function(string, integer)
 	drawMesh: function()
 end
 

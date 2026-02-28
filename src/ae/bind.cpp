@@ -460,10 +460,10 @@ LUA(entity_loadMesh)
 
 LUA(entity_loadSkeleton)
 {
-	// auto glTF = lua_tostring(script, -2);
-	// auto id = lua_tostring(script, -1);
-	// auto g = getWindow(script)->getCamera()->getGLTF(glTF);
-	// getEntity(script)->
+	auto glTF = lua_tostring(script, -2);
+	auto id = lua_tointeger(script, -1);
+	auto g = getWindow(script)->getCamera()->getGLTF(glTF);
+	getEntity(script)->getSkeleton()->load(g, id);
 	return 0;
 }
 
