@@ -305,15 +305,15 @@ void Camera::drawMesh(u32 vbo, u32 ebo, u32 tex, usize len)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glVertexAttribPointer(
 		0, 3, GL_FLOAT, GL_FALSE,
-		8 * sizeof(f32), 0
+		9 * sizeof(f32), 0
 	);
 	glVertexAttribPointer(
-		1, 3, GL_FLOAT, GL_TRUE,
-		8 * sizeof(f32), (void*)(3 * sizeof(f32))
+		1, 4, GL_FLOAT, GL_FALSE,
+		9 * sizeof(f32), (void*)(3 * sizeof(f32))
 	);
 	glVertexAttribPointer(
-		2, 2, GL_FLOAT, GL_TRUE,
-		8 * sizeof(f32), (void*)(6 * sizeof(f32))
+		2, 2, GL_FLOAT, GL_FALSE,
+		9 * sizeof(f32), (void*)(7 * sizeof(f32))
 	);
 	glDrawElements(GL_TRIANGLES, len, GL_UNSIGNED_SHORT, 0);
 }

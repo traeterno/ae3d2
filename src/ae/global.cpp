@@ -60,6 +60,24 @@ void ae::str::removeAll(std::string &base, std::string part)
 	}
 }
 
+std::vector<std::string> ae::str::split(std::string base, std::string sep)
+{
+	std::vector<std::string> out;
+
+	auto x = base.find(sep);
+	while (x != std::string::npos)
+	{
+		auto p = base.substr(0, x);
+		if (!p.empty()) out.push_back(p);
+		base = base.substr(x + sep.length());
+		x = base.find(sep);
+	}
+
+	if (!base.empty()) out.push_back(base);
+
+	return out;
+}
+
 std::string ae::str::format(const char* style, ...)
 {
 	va_list args;

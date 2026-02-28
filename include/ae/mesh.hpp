@@ -38,6 +38,7 @@ public:
 	void update(glm::mat4 parent);
 	void render(std::vector<glm::vec3>* pts);
 private:
+	u16 id;
 	std::string name;
 	std::vector<Bone> children;
 	glm::mat4 ts;

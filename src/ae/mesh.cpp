@@ -52,22 +52,28 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 	auto tbv = &file->bufferViews[ta->bufferView];
 	auto tb = &file->buffers[tbv->buffer];
 
-	auto buf = (u8*)malloc(vbv->byteLength + nbv->byteLength + tbv->byteLength);
+	auto ja = &file->accessors[m->joints];
+	auto jbv = &file->bufferViews[ja->bufferView];
+	auto jb = &file->buffers[jbv->buffer];
+
+	auto buf = new u8[va->count * 9 * sizeof(f32)];
 
 	for (usize i = 0 ; i < va->count; i++)
 	{
-		usize offset = i * 8 * sizeof(f32);
+		usize offset = i * 9 * sizeof(f32);
 		usize vOffset = vbv->byteOffset + i * 3 * sizeof(f32);
 		usize nOffset = nbv->byteOffset + i * 3 * sizeof(f32);
 		usize tOffset = tbv->byteOffset + i * 2 * sizeof(f32);
+		f32 joint = jb->data[jbv->byteOffset + i * 4];
 		memcpy(&buf[offset], &vb->data[vOffset], 3 * sizeof(f32));
 		memcpy(&buf[offset + 3 * sizeof(f32)], &nb->data[nOffset], 3 * sizeof(f32));
-		memcpy(&buf[offset + 6 * sizeof(f32)], &tb->data[tOffset], 2 * sizeof(f32));
+		memcpy(&buf[offset + 7 * sizeof(f32)], &tb->data[tOffset], 2 * sizeof(f32));
+		memcpy(&buf[offset + 6 * sizeof(f32)], &joint, sizeof(f32));
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferData(
-		GL_ARRAY_BUFFER, vbv->byteLength + nbv->byteLength + tbv->byteLength,
+		GL_ARRAY_BUFFER, va->count * 9 * sizeof(f32),
 		buf, GL_STATIC_DRAW
 	);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -122,6 +128,11 @@ void ae::mesh::Mesh::render()
 ae::mesh::Bone::Bone()
 {
 	this->children = {};
+	this->angle = glm::quat();
+	this->ts = glm::mat4(1.0);
+	this->translation = glm::mat4(1.0);
+	this->length = 1.0;
+	this->id = U16_MAX;
 }
 
 ae::mesh::Bone::Bone(gltf::GLTF* file, u16 id)
@@ -129,7 +140,7 @@ ae::mesh::Bone::Bone(gltf::GLTF* file, u16 id)
 	auto n = &file->nodes[id];
 	
 	this->name = n->name;
-	
+	this->id = id;
 	this->angle = n->rotation;
 	this->translation = glm::translate(glm::mat4(1.0), n->translation);
 
@@ -362,9 +373,9 @@ ae::gltf::GLTF* ae::gltf::load(const char* id)
 			.name = x["name"].asString(),
 			.vertices = (u16)a["POSITION"].asUInt(),
 			.normal = (u16)a["NORMAL"].asUInt(),
-			.texCoord = (u16)a["TEXCOORD_0"].asUInt(),
-			.joints = (u16)a["JOINTS_0"].asUInt(),
-			.weights = (u16)a["WEIGHTS_0"].asUInt(),
+			.texCoord = a["TEXCOORD_0"].isNull() ? U16_MAX : (u16)a["TEXCOORD_0"].asUInt(),
+			.joints = a["JOINTS_0"].isNull() ? U16_MAX : (u16)a["JOINTS_0"].asUInt(),
+			.weights = a["WEIGHTS_0"].isNull() ? U16_MAX : (u16)a["WEIGHTS_0"].asUInt(),
 			.indices = (u16)p["indices"].asUInt(),
 			.material = p["material"].isNull() ? U8_MAX : (u8)p["material"].asUInt()
 		});

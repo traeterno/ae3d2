@@ -21,7 +21,7 @@ namespace ae::fs
 namespace ae::str
 {
 	void removeAll(std::string& base, std::string part);
-
+	std::vector<std::string> split(std::string base, std::string sep);
 	std::string format(const char* style, ...);
 }
 
