@@ -117,12 +117,13 @@ void ae::mesh::Mesh::destroy()
 	this->cam->removeVBO(this->vbo);
 	this->cam->removeVBO(this->ebo);
 	glDeleteTextures(1, &this->texture);
-	delete this->sk;
+	if (this->sk != nullptr) delete this->sk;
 	this->cam = nullptr;
 }
 
 void ae::mesh::Mesh::render()
 {
+	if (this->sk != nullptr) this->sk->update();
 	this->cam->shaderUse("mesh");
 	this->cam->bindMeshVAO();
 	this->cam->bindTexture(this->texture);

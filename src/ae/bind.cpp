@@ -466,8 +466,9 @@ LUA(entity_draw)
 
 LUA(entity_drawSkeleton)
 {
-	getEntity(script)->getMesh()->
-		getSkeleton()->render(getWindow(script)->getCamera());
+	auto sk = getEntity(script)->getMesh()->getSkeleton();
+	if (sk == nullptr) return 0;
+	sk->render(getWindow(script)->getCamera());
 	return 0;
 }
 
