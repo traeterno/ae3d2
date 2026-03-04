@@ -25,11 +25,9 @@ public:
 	bool update();
 	bool render();
 	mesh::Mesh* getMesh();
-	mesh::Skeleton* getSkeleton();
 private:
 	lua_State* state;
 	mesh::Mesh mesh;
-	mesh::Skeleton skeleton;
 	Window* window;
 };
 

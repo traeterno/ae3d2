@@ -192,8 +192,3 @@ ae::mesh::Mesh* Entity::getMesh()
 {
 	return &this->mesh;
 }
-
-ae::mesh::Skeleton* Entity::getSkeleton()
-{
-	return &this->skeleton;
-}

@@ -13,22 +13,6 @@ namespace ae::gltf { struct GLTF; }
 namespace ae::mesh
 {
 
-class Mesh
-{
-public:
-	Mesh(ae::Camera* cam);
-	~Mesh();
-	void load(gltf::GLTF* file, const char* id);
-	void destroy();
-	void render();
-private:
-	u32 vbo;
-	u32 ebo;
-	usize indices;
-	u32 texture;
-	ae::Camera* cam;
-};
-
 class Bone
 {
 public:
@@ -55,11 +39,30 @@ public:
 	void load(gltf::GLTF* file, u8 id);
 	void update();
 	void render(ae::Camera* cam);
+	void apply();
 private:
 	std::vector<glm::mat4> inverseBindMatrices;
 	std::vector<glm::mat4> joints;
 	std::vector<Bone> bones;
 	u32 vbo;
+};
+
+class Mesh
+{
+public:
+	Mesh(ae::Camera* cam);
+	~Mesh();
+	void load(gltf::GLTF* file, const char* id);
+	void destroy();
+	void render();
+	Skeleton* getSkeleton();
+private:
+	u32 vbo;
+	u32 ebo;
+	usize indices;
+	u32 texture;
+	ae::Camera* cam;
+	Skeleton* sk;
 };
 
 };
@@ -98,8 +101,8 @@ struct Scene
 struct Node
 {
 	std::vector<u16> children;
-	u16 mesh;
-	u16 skin;
+	u8 mesh;
+	u8 skin;
 	std::string name;
 	glm::quat rotation;
 	glm::vec3 translation;

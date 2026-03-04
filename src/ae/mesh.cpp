@@ -10,6 +10,7 @@ ae::mesh::Mesh::Mesh(ae::Camera* camera)
 	this->vbo = camera->createVBO();
 	this->ebo = camera->createVBO();
 	this->cam = camera;
+	this->texture = 0;
 }
 
 ae::mesh::Mesh::~Mesh()
@@ -27,7 +28,7 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 		printf("Error: Node \"%s\" not found\n", id);
 		return;
 	}
-	if (node->mesh == U16_MAX)
+	if (node->mesh == U8_MAX)
 	{
 		printf("Error: Node \"%s\" does not contain mesh\n", id);
 		return;
@@ -87,6 +88,12 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 
 	this->indices = ia->count;
 
+	if (node->skin != U8_MAX)
+	{
+		this->sk = new Skeleton;
+		this->sk->load(file, node->skin);
+	}
+
 	if (m->material == U8_MAX) return;
 
 	auto mat = &file->materials[m->material];
@@ -110,19 +117,32 @@ void ae::mesh::Mesh::destroy()
 	this->cam->removeVBO(this->vbo);
 	this->cam->removeVBO(this->ebo);
 	glDeleteTextures(1, &this->texture);
-	this->vbo = 0;
-	this->ebo = 0;
-	this->texture = 0;
+	delete this->sk;
+	this->cam = nullptr;
 }
 
 void ae::mesh::Mesh::render()
 {
-	this->cam->drawMesh(
-		this->vbo,
-		this->ebo,
-		this->texture,
-		this->indices
+	this->cam->shaderUse("mesh");
+	this->cam->bindMeshVAO();
+	this->cam->bindTexture(this->texture);
+	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
+	glVertexAttribPointer(
+		0, 3, GL_FLOAT, GL_FALSE, 36, 0
 	);
+	glVertexAttribPointer(
+		1, 4, GL_FLOAT, GL_FALSE, 36, (void*)12
+	);
+	glVertexAttribPointer(
+		2, 2, GL_FLOAT, GL_FALSE, 36, (void*)28
+	);
+	glDrawElements(GL_TRIANGLES, this->indices, GL_UNSIGNED_SHORT, 0);
+}
+
+ae::mesh::Skeleton* ae::mesh::Mesh::getSkeleton()
+{
+	return this->sk;
 }
 
 ae::mesh::Bone::Bone()
@@ -239,18 +259,24 @@ void ae::mesh::Skeleton::load(gltf::GLTF* file, u8 id)
 
 void ae::mesh::Skeleton::render(ae::Camera* cam)
 {
-	this->update();
 	std::vector<glm::vec3> points;
 	for (usize i = 0; i < this->bones.size(); i++)
 	{
 		this->bones[i].render(&points);
 	}
+	cam->shaderUse("skeleton");
+	cam->bindSkeletonVAO();
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferData(
-		GL_ARRAY_BUFFER, points.size() * sizeof(f32) * 3,
+		GL_ARRAY_BUFFER, points.size() * 12,
 		points.data(), GL_STATIC_DRAW
 	);
-	cam->drawSkeleton(this->vbo, points.size());
+	glVertexAttribPointer(
+		0, 3, GL_FLOAT, GL_FALSE, 12, 0
+	);
+	glDepthFunc(GL_ALWAYS);
+	glDrawArrays(GL_LINES, 0, points.size());
+	glDepthFunc(GL_LESS);
 }
 
 void ae::mesh::Skeleton::update()
@@ -259,6 +285,12 @@ void ae::mesh::Skeleton::update()
 	{
 		this->bones[i].update(glm::mat4(1.0));
 	}
+	// TODO update and bind matrices (ibm, transformations, rotations-only)
+}
+
+void ae::mesh::Skeleton::apply()
+{
+	// TODO
 }
 
 ae::gltf::GLTF* ae::gltf::load(const char* id)
@@ -327,8 +359,8 @@ ae::gltf::GLTF* ae::gltf::load(const char* id)
 	{
 		Node n {
 			.children = {},
-			.mesh = U16_MAX,
-			.skin = U16_MAX,
+			.mesh = U8_MAX,
+			.skin = U8_MAX,
 			.name = x["name"].asString(),
 			.rotation = glm::quat(),
 			.translation = glm::vec3(),

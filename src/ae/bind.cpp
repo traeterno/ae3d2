@@ -458,16 +458,7 @@ LUA(entity_loadMesh)
 	return 0;
 }
 
-LUA(entity_loadSkeleton)
-{
-	auto glTF = lua_tostring(script, -2);
-	auto id = lua_tointeger(script, -1);
-	auto g = getWindow(script)->getCamera()->getGLTF(glTF);
-	getEntity(script)->getSkeleton()->load(g, id);
-	return 0;
-}
-
-LUA(entity_drawMesh)
+LUA(entity_draw)
 {
 	getEntity(script)->getMesh()->render();
 	return 0;
@@ -475,16 +466,16 @@ LUA(entity_drawMesh)
 
 LUA(entity_drawSkeleton)
 {
-	getEntity(script)->getSkeleton()->render(getWindow(script)->getCamera());
+	getEntity(script)->getMesh()->
+		getSkeleton()->render(getWindow(script)->getCamera());
 	return 0;
 }
 
 void ae::bind::entity(lua_State* script)
 {
-	lua_createtable(script, 0, 4);
+	lua_createtable(script, 0, 3);
 	insertFunction(script, "loadMesh", ae_entity_loadMesh);
-	insertFunction(script, "loadSkeleton", ae_entity_loadSkeleton);
-	insertFunction(script, "drawMesh", ae_entity_drawMesh);
+	insertFunction(script, "draw", ae_entity_draw);
 	insertFunction(script, "drawSkeleton", ae_entity_drawSkeleton);
 	lua_setglobal(script, "aeEntity");
 }

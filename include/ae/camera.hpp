@@ -31,6 +31,8 @@ public:
 	void resized();
 	void textureUse(const char* id);
 	void bindVAO(u32 id);
+	void bindTexture(const char* id);
+	void bindTexture(u32 id);
 	void useProjection(bool perspective);
 	void useView(bool camera);
 	u32 createVBO();
@@ -46,8 +48,9 @@ public:
 
 	void drawSprite();
 	void drawText(u32 id, usize len);
-	void drawMesh(u32 vbo, u32 ebo, u32 tex, usize count);
-	void drawSkeleton(u32 vbo, usize count);
+
+	void bindMeshVAO();
+	void bindSkeletonVAO();
 
 	void shaderUse(const char* id);
 	void shaderMat3(const char* uniform, glm::mat3 value, bool warn = true);
@@ -66,6 +69,7 @@ private:
 	Offscreen offscreen;
 	u32 currentShader, currentTexture, currentVAO;
 	u32 spriteVAO, textVAO, meshVAO, skeletonVAO;
+	// TODO replace skeletonVAO with shapeVAO
 	std::string fontName;
 	glm::mat4 perspective, orthographic, currentProj;
 	glm::mat4 camView, currentView;

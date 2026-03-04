@@ -213,6 +213,9 @@ void Camera::drawText(u32 id, usize len)
 	glDrawArrays(GL_TRIANGLES, 0, len);
 }
 
+void Camera::bindMeshVAO() { this->bindVAO(this->meshVAO); }
+void Camera::bindSkeletonVAO() { this->bindVAO(this->skeletonVAO); }
+
 void Camera::setFont(const char* name)
 {
 	this->fontName = ae::str::format("fonts/%s", name);
@@ -253,6 +256,18 @@ void Camera::bindVAO(u32 id)
 	glBindVertexArray(this->currentVAO);
 }
 
+void Camera::bindTexture(u32 id)
+{
+	if (id == this->currentTexture) return;
+	this->currentTexture = id;
+	glBindTexture(GL_TEXTURE_2D, id);
+}
+
+void Camera::bindTexture(const char* id)
+{
+	this->bindTexture(this->getTexture(id).id);
+}
+
 void Camera::useProjection(bool p)
 {
 	this->currentProj = p ? this->perspective : this->orthographic;
@@ -290,46 +305,6 @@ gltf::GLTF* Camera::getGLTF(const char* id)
 void Camera::unloadGLTF(const char* id)
 {
 	this->gltfs.erase(id);
-}
-
-void Camera::drawMesh(u32 vbo, u32 ebo, u32 tex, usize len)
-{
-	this->shaderUse("mesh");
-	this->bindVAO(this->meshVAO);
-	if (this->currentTexture != tex)
-	{
-		glBindTexture(GL_TEXTURE_2D, tex);
-		this->currentTexture = tex;
-	}
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glVertexAttribPointer(
-		0, 3, GL_FLOAT, GL_FALSE,
-		9 * sizeof(f32), 0
-	);
-	glVertexAttribPointer(
-		1, 4, GL_FLOAT, GL_FALSE,
-		9 * sizeof(f32), (void*)(3 * sizeof(f32))
-	);
-	glVertexAttribPointer(
-		2, 2, GL_FLOAT, GL_FALSE,
-		9 * sizeof(f32), (void*)(7 * sizeof(f32))
-	);
-	glDrawElements(GL_TRIANGLES, len, GL_UNSIGNED_SHORT, 0);
-}
-
-void Camera::drawSkeleton(u32 vbo, usize len)
-{
-	this->shaderUse("skeleton");
-	this->bindVAO(this->skeletonVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glVertexAttribPointer(
-		0, 3, GL_FLOAT, GL_FALSE,
-		3 * sizeof(f32), 0
-	);
-	glDepthFunc(GL_ALWAYS);
-	glDrawArrays(GL_LINES, 0, len);
-	glDepthFunc(GL_LESS);
 }
 
 Texture Camera::getTexture(const char* name)

@@ -41,9 +41,9 @@ end
 
 global record aeEntity
 	loadMesh: function(string, string)
-	loadSkeleton: function(string, integer)
-	drawMesh: function()
+	draw: function()
 	drawSkeleton: function()
+	setTransform: function(aeMath.Transform)
 end
 
 global _winptr: integer

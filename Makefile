@@ -1,3 +1,5 @@
+# TODO improve makefile: add include files as dependencies
+
 in = -I./include -std=c++17 -Wall
 
 ifeq ($(OS),Windows_NT)
