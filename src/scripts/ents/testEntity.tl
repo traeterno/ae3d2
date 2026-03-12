@@ -27,6 +27,8 @@ global function Init()
 	ts = aeMath.Transform.new()
 	ts.angle.yaw = 180
 	cam:follow(ts.pos, 1.5)
+
+	aeEntity.setAnimation("anim")
 end
 
 global function Update()
@@ -44,12 +46,9 @@ end
 
 global function Draw()
 	aeCamera.shaderUse("mesh")
-	aeCamera.setModelMatrix(ts)
 	aeCamera.shaderVec3("camera", cam.direction)
-	aeEntity.draw()
-	aeCamera.shaderUse("skeleton")
-	aeCamera.setModelMatrix(ts)
-	aeEntity.drawSkeleton()
+	aeEntity.draw(ts)
+	aeEntity.drawSkeleton(ts)
 	spr:draw()
 end
 

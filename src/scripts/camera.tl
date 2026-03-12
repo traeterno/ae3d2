@@ -113,6 +113,7 @@ function Camera:apply()
 	self.orientation.x = self.orientation.x % 360.0
 	self.orientation.z = self.orientation.z % 360.0
 	self.orientation.y = aeMath.clamp(self.orientation.y, -80, 80)
+	self:buildAxes()
 	aeCamera.buildView({
 		pos = self.position,
 		orientation = self.orientation,

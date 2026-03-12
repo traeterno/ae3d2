@@ -1,6 +1,8 @@
 # TODO improve makefile: add include files as dependencies
 
-in = -I./include -std=c++17 -Wall
+FLAGS = -g
+
+in = -I./include -std=c++17 -Wall $(FLAGS)
 
 ifeq ($(OS),Windows_NT)
 	libs = -lopengl32 -lgdi32 -lws2_32

@@ -26,6 +26,8 @@ void ae::bind::setup(lua_State* script, Window* win, const char* executor)
 	lua_pushstring(script, "path");
 	lua_pushstring(script, "./res/scripts/?.lua");
 	lua_settable(script, -3);
+
+	lua_settop(script, 0);
 }
 
 ae::Window* getWindow(lua_State* script)
@@ -144,6 +146,24 @@ void quat_lua(lua_State* script, glm::vec3 v, bool g)
 	insertNumber(script, "pitch", v.y);
 	insertNumber(script, "roll", v.z);
 	insertBoolean(script, "relative", g);
+}
+
+std::pair<glm::mat3, glm::mat4> lua_ts(lua_State* script)
+{
+	lua_getfield(script, -1, "pos");
+	auto pos = lua_vec3(script);
+	lua_getfield(script, -5, "origin");
+	auto origin = lua_vec3(script);
+	lua_getfield(script, -9, "scale");
+	auto scale = lua_vec3(script);
+	lua_getfield(script, -13, "angle");
+	auto angle = glm::mat3(lua_quat(script));
+	glm::mat4 ts;
+	ts = glm::translate(glm::mat4(1.0), -origin);
+	ts = glm::scale(glm::mat4(1.0), scale) * ts;
+	ts = glm::mat4(angle) * ts;
+	ts = glm::translate(glm::mat4(1.0), pos) * ts;
+	return {angle, ts};
 }
 
 LUA(window_close)
@@ -280,27 +300,6 @@ LUA(camera_shaderVec4)
 	return 0;
 }
 
-LUA(camera_setModelMatrix)
-{
-	lua_getfield(script, -1, "pos");
-	auto pos = lua_vec3(script);
-	lua_getfield(script, -5, "origin");
-	auto origin = lua_vec3(script);
-	lua_getfield(script, -9, "scale");
-	auto scale = lua_vec3(script);
-	lua_getfield(script, -13, "angle");
-	auto angle = glm::mat3(lua_quat(script));
-	glm::mat4 ts;
-	ts = glm::translate(glm::mat4(1.0), -origin);
-	ts = glm::scale(glm::mat4(1.0), scale) * ts;
-	ts = glm::mat4(angle) * ts;
-	ts = glm::translate(glm::mat4(1.0), pos) * ts;
-	// TODO check out reference system / stack manipulation
-	getWindow(script)->getCamera()->shaderMat3("rotation", angle, false);
-	getWindow(script)->getCamera()->shaderSetModel(ts);
-	return 0;
-}
-
 LUA(camera_drawSprite)
 {
 	getWindow(script)->getCamera()->drawSprite();
@@ -405,7 +404,6 @@ void ae::bind::camera(lua_State* script)
 {
 	lua_createtable(script, 0, 19);
 	insertFunction(script, "textureUse", ae_camera_textureUse);
-	insertFunction(script, "setModelMatrix", ae_camera_setModelMatrix);
 	insertFunction(script, "textureSize", ae_camera_textureSize);
 	insertFunction(script, "shaderUse", ae_camera_shaderUse);
 	insertFunction(script, "shaderInt", ae_camera_shaderInt);
@@ -460,15 +458,29 @@ LUA(entity_loadMesh)
 
 LUA(entity_draw)
 {
-	getEntity(script)->getMesh()->render();
+	auto [rotation, ts] = lua_ts(script);
+	getEntity(script)->getMesh()->render(
+		getWindow(script)->getDeltaTime(),
+		rotation, ts
+	);
 	return 0;
 }
 
 LUA(entity_drawSkeleton)
 {
+	auto [rotation, ts] = lua_ts(script);
 	auto sk = getEntity(script)->getMesh()->getSkeleton();
 	if (sk == nullptr) return 0;
-	sk->render(getWindow(script)->getCamera());
+	sk->render(getWindow(script)->getCamera(), ts);
+	return 0;
+}
+
+LUA(entity_setAnimation)
+{
+	auto sk = getEntity(script)->getMesh()->getSkeleton();
+	if (sk == nullptr) return 0;
+	const char* anim = lua_tostring(script, -3);
+	sk->setAnimation(anim);
 	return 0;
 }
 
@@ -478,5 +490,6 @@ void ae::bind::entity(lua_State* script)
 	insertFunction(script, "loadMesh", ae_entity_loadMesh);
 	insertFunction(script, "draw", ae_entity_draw);
 	insertFunction(script, "drawSkeleton", ae_entity_drawSkeleton);
+	insertFunction(script, "setAnimation", ae_entity_setAnimation);
 	lua_setglobal(script, "aeEntity");
 }

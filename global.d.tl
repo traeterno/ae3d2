@@ -20,7 +20,6 @@ global record aeCamera
 	shaderVec2: function(string, aeMath.Vec2)
 	shaderVec3: function(string, aeMath.Vec3)
 	shaderVec4: function(string, aeMath.Vec4)
-	setModelMatrix: function(aeMath.Transform)
 	drawSprite: function()
 	clearCache: function()
 	createVBO: function(): integer
@@ -34,6 +33,8 @@ global record aeCamera
 	unloadGLTF: function(string)
 end
 
+-- TODO remove 'setModelMatrix'; pass transform as 'drawX' argument
+
 global record aeWorld
 	load: function(string)
 	spawn: function(string, string)
@@ -41,9 +42,9 @@ end
 
 global record aeEntity
 	loadMesh: function(string, string)
-	draw: function()
-	drawSkeleton: function()
-	setTransform: function(aeMath.Transform)
+	draw: function(aeMath.Transform)
+	drawSkeleton: function(aeMath.Transform)
+	setAnimation: function(string)
 end
 
 global _winptr: integer

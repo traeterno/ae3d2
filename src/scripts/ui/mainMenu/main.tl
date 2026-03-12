@@ -13,7 +13,6 @@ end
 
 global function OnResized()
 	local winSize = aeWindow.size()
-	-- spr:setPosition(aeMath.Vec3.new(winSize.x * 0.5, winSize.y * 0.5, 0))
 	txt.ts.pos = aeMath.Vec3.new(winSize.x * 0.5, 0, 0)
 end
 
@@ -25,6 +24,5 @@ global function Update()
 end
 
 global function Draw()
-	-- spr:draw()
-	txt:draw()
+	-- txt:draw()
 end

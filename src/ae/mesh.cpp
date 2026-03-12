@@ -17,6 +17,7 @@ ae::mesh::Mesh::~Mesh()
 {
 	this->vbo = 0;
 	this->ebo = 0;
+	delete this->sk;
 }
 
 void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
@@ -37,41 +38,40 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 	auto m = &file->meshes[node->mesh];
 	printf("Loading node \"%s\" as mesh \"%s\"\n", id, m->name.c_str());
 
-	auto va = &file->accessors[m->vertices];
-	auto vbv = &file->bufferViews[va->bufferView];
-	auto vb = &file->buffers[vbv->buffer];
-
 	auto ia = &file->accessors[m->indices];
 	auto ibv = &file->bufferViews[ia->bufferView];
 	auto ib = &file->buffers[ibv->buffer];
 
+	auto va = &file->accessors[m->vertices];
+	auto vbv = &file->bufferViews[va->bufferView];
+	auto vertices = (glm::vec3*)&file->buffers[vbv->buffer]
+		.data[vbv->byteOffset];
+
 	auto na = &file->accessors[m->normal];
 	auto nbv = &file->bufferViews[na->bufferView];
-	auto nb = &file->buffers[nbv->buffer];
+	auto normals = (glm::vec3*)&file->buffers[nbv->buffer]
+		.data[nbv->byteOffset];
 
 	auto ta = &file->accessors[m->texCoord];
 	auto tbv = &file->bufferViews[ta->bufferView];
-	auto tb = &file->buffers[tbv->buffer];
+	auto uvs = (glm::vec2*)&file->buffers[tbv->buffer]
+		.data[tbv->byteOffset];
 
 	auto ja = &file->accessors[m->joints];
 	auto jbv = &file->bufferViews[ja->bufferView];
-	auto jb = &file->buffers[jbv->buffer];
+	auto joints = (glm::u8vec4*)&file->buffers[jbv->buffer]
+		.data[jbv->byteOffset];
 
-	auto buf = new u8[va->count * 9 * sizeof(f32)];
+	auto buf = new f32[va->count * 9];
 
 	for (usize i = 0 ; i < va->count; i++)
 	{
-		usize offset = i * 9 * sizeof(f32);
-		usize vOffset = vbv->byteOffset + i * 3 * sizeof(f32);
-		usize nOffset = nbv->byteOffset + i * 3 * sizeof(f32);
-		usize tOffset = tbv->byteOffset + i * 2 * sizeof(f32);
-		f32 joint = jb->data[jbv->byteOffset + i * 4];
-		memcpy(&buf[offset], &vb->data[vOffset], 3 * sizeof(f32));
-		memcpy(&buf[offset + 3 * sizeof(f32)], &nb->data[nOffset], 3 * sizeof(f32));
-		memcpy(&buf[offset + 7 * sizeof(f32)], &tb->data[tOffset], 2 * sizeof(f32));
-		memcpy(&buf[offset + 6 * sizeof(f32)], &joint, sizeof(f32));
+		(*(glm::vec3*)&buf[i*9+0]) = vertices[i];
+		(*(glm::vec3*)&buf[i*9+3]) = normals[i];
+		buf[i*9+6] = (f32)joints[i].x;
+		(*(glm::vec2*)&buf[i*9+7]) = uvs[i];
 	}
-
+	
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferData(
 		GL_ARRAY_BUFFER, va->count * 9 * sizeof(f32),
@@ -121,12 +121,14 @@ void ae::mesh::Mesh::destroy()
 	this->cam = nullptr;
 }
 
-void ae::mesh::Mesh::render()
+void ae::mesh::Mesh::render(f32 dt, glm::mat3 rotation, glm::mat4 ts)
 {
-	if (this->sk != nullptr) this->sk->update();
 	this->cam->shaderUse("mesh");
+	if (this->sk != nullptr) this->sk->update(dt, this->cam);
 	this->cam->bindMeshVAO();
 	this->cam->bindTexture(this->texture);
+	this->cam->shaderMat3("rotation", rotation);
+	this->cam->shaderSetModel(ts);
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
 	glVertexAttribPointer(
@@ -146,11 +148,69 @@ ae::mesh::Skeleton* ae::mesh::Mesh::getSkeleton()
 	return this->sk;
 }
 
+ae::f32 ae::anim::applyInterpolation(
+	ae::anim::Interpolation ip, f32 t
+)
+{
+	using IP = ae::anim::Interpolation;
+	switch (ip)
+	{
+		case IP::Step: return 0;
+		case IP::Linear: return t;
+		case IP::CubicSpline: return t < 0.5 ?
+		(4 * pow(t, 3)) :
+		(1 - pow(-2 * t + 2, 3) * 0.5);
+	}
+	return 0;
+}
+
+std::tuple<std::string, ae::anim::Animation>
+	ae::anim::loadAnimation(gltf::GLTF *file, u8 id)
+{
+	auto anim = &file->animations[id];
+	Animation a;
+	a.currentTime = 0.0;
+	a.duration = anim->duration;
+	a.repeat = anim->repeat;
+	for (auto c: anim->channels)
+	{
+		// TODO if you'll add ability to change smth other than rotation,
+		// then use timeline not as vector of keyframes,
+		// but number of vectors for each type of changes
+		using TP = gltf::Animation::Channel::TargetPath;
+		if (c.targetPath != TP::Rotation) { continue; }
+		Timeline tl;
+		auto s = &anim->samplers[c.sampler];
+		tl.func = s->interpolation;
+		tl.currentFrame = 0;
+		tl.bone = c.targetNode;
+
+		auto ia = &file->accessors[s->input];
+		auto ibv = &file->bufferViews[ia->bufferView];
+		auto ts = (f32*)&file->buffers[ibv->buffer].data[ibv->byteOffset];
+		
+		auto oa = &file->accessors[s->output];
+		auto obv = &file->bufferViews[oa->bufferView];
+		auto rot = (glm::vec4*)&file->buffers[obv->buffer].data[obv->byteOffset];
+
+		for (u16 i = 0; i < ia->count; i++)
+		{
+			auto r = rot[i * 3 + 1];
+			tl.frames.push_back({
+				.timestamp = ts[i],
+				.rotation = glm::quat(r.w, r.x, r.y, r.z)
+			});
+		}
+
+		a.frames.push_back(tl);
+	}
+	return {anim->name, a};
+}
+
 ae::mesh::Bone::Bone()
 {
 	this->children = {};
-	this->angle = glm::quat();
-	this->ts = glm::mat4(1.0);
+	this->angle = glm::mat3(1.0);
 	this->translation = glm::mat4(1.0);
 	this->length = 1.0;
 	this->id = U16_MAX;
@@ -162,19 +222,20 @@ ae::mesh::Bone::Bone(gltf::GLTF* file, u16 id)
 	
 	this->name = n->name;
 	this->id = id;
-	this->angle = n->rotation;
+	this->angle = glm::mat3_cast(n->rotation);
 	this->translation = glm::translate(glm::mat4(1.0), n->translation);
 
 	if (!n->children.empty())
 	{
 		this->length = glm::length(file->nodes[n->children[0]].translation);
 	}
-	else { this->length = 0.1; }
+	else { this->length = 0.5; }
 
-	for (u16 childID: n->children)
-	{
-		this->children.push_back(Bone(file, childID));
-	}
+	this->children = n->children;
+	
+	printf("%s %i\n",
+		n->name.c_str(), this->id
+	);
 }
 
 ae::mesh::Bone::~Bone()
@@ -182,38 +243,45 @@ ae::mesh::Bone::~Bone()
 	this->children.clear();
 }
 
-void ae::mesh::Bone::update(glm::mat4 parent)
+void ae::mesh::Bone::update(
+	glm::mat4* bones, glm::mat3* frame, glm::mat4* ts, glm::mat3* joints,
+	u16 index
+)
 {
-	if (parent == glm::mat4(1.0)) parent = this->translation;
-	this->ts = parent * glm::mat4_cast(this->angle);
-	auto t = glm::translate(glm::mat4(1.0), glm::vec3(0, this->length, 0));
-	for (usize i = 0; i < this->children.size(); i++)
+	if (bones[this->id] == glm::mat4(1.0)) bones[this->id] = this->translation;
+	glm::mat4 parent = bones[this->id];
+	glm::mat3 state = frame[this->id];
+
+	ts[index] = parent * glm::mat4(state);
+	joints[index] = state * joints[index];
+	glm::mat4 t = glm::translate(glm::mat4(1.0), glm::vec3(0, this->length, 0));
+
+	for (u16 i: this->children)
 	{
-		this->children[i].update(this->ts * t);
+		bones[i] = ts[index] * t;
+		joints[i] = joints[index];
 	}
 }
 
-void ae::mesh::Bone::render(std::vector<glm::vec3>* pts)
-{
-	auto p1 = this->ts * glm::vec4(0, 0, 0, 1);
-	auto p2 = this->ts * glm::vec4(0, this->length, 0, 1);
-	pts->push_back(glm::vec3(p1.x, p1.y, p1.z));
-	pts->push_back(glm::vec3(p2.x, p2.y, p2.z));
-	for (auto b: this->children) b.render(pts);
-	// TODO inherit transformation
-}
+ae::u16 ae::mesh::Bone::getID() { return this->id; }
+ae::f32 ae::mesh::Bone::getLength() { return this->length; }
 
 ae::mesh::Skeleton::Skeleton()
 {
-	this->inverseBindMatrices = {};
+	this->inverseBindMatrices = nullptr;
+	this->ts = nullptr;
+	this->joints = nullptr;
 	this->bones = {};
+	this->anims = {};
+	this->currentAnim = std::string();
 	glGenBuffers(1, &this->vbo);
 }
 
 ae::mesh::Skeleton::~Skeleton()
 {
-	this->inverseBindMatrices.clear();
-	this->bones.clear();
+	delete[] this->inverseBindMatrices;
+	delete[] this->ts;
+	delete[] this->joints;
 	glDeleteBuffers(1, &this->vbo);
 }
 
@@ -223,75 +291,143 @@ void ae::mesh::Skeleton::load(gltf::GLTF* file, u8 id)
 
 	auto ma = &file->accessors[skin->inverseBindMatrices];
 	auto mbv = &file->bufferViews[ma->bufferView];
-	auto mb = &file->buffers[mbv->buffer];
-
-	this->inverseBindMatrices = std::vector<glm::mat4>(ma->count, glm::mat4(1.0));
-	for (usize i = 0; i < ma->count; i++)
+	auto ibm = (glm::mat4*)&file->buffers[mbv->buffer].data[mbv->byteOffset];
+	
+	this->ts = new glm::mat4[skin->joints.size()];
+	this->joints = new glm::mat3[skin->joints.size()];
+	this->inverseBindMatrices = new glm::mat4[skin->joints.size()];
+	memcpy(this->inverseBindMatrices, ibm, skin->joints.size() * sizeof(glm::mat4));
+	
+	this->bones.resize(skin->joints.size());
+	for (usize i = 0; i < skin->joints.size(); i++)
 	{
-		this->inverseBindMatrices[i] =
-			*(glm::mat4*)&mb->data[mbv->byteOffset+16*sizeof(f32)*i];
+		this->bones[i] = Bone(file, skin->joints[i]);
 	}
 
-	std::unordered_map<u16, bool> children;
-	for (u16 id: skin->joints)
+	for (u8 i = 0; i < file->animations.size(); i++)
 	{
-		children.insert({id, false});
+		auto [
+			name, anim
+		] = anim::loadAnimation(file, i);
+		this->anims.insert({name, anim});
 	}
-
-	for (u16 id: skin->joints)
-	{
-		for (u16 x: file->nodes[id].children)
-		{
-			children.insert_or_assign(x, true);
-		}
-	}
-
-	for (auto [id, is]: children)
-	{
-		if (!is)
-		{
-			printf("Loading bone #%u as root\n", id);
-			this->bones.push_back(Bone(file, id));
-		}
-	}
-
-	// https://github.com/traeterno/envell3d/blob/master/src/ae3d/Skeleton.rs
 }
 
-void ae::mesh::Skeleton::render(ae::Camera* cam)
+void ae::mesh::Skeleton::update(f32 dt, ae::Camera* cam)
 {
-	std::vector<glm::vec3> points;
+	auto frame = new glm::mat3[this->bones.size()];
+	auto bones = new glm::mat4[this->bones.size()];
+
 	for (usize i = 0; i < this->bones.size(); i++)
 	{
-		this->bones[i].render(&points);
+		bones[i] = glm::mat4(1.0);
+		frame[i] = glm::mat3(1.0);
+	}
+	memcpy(this->ts, bones, this->bones.size() * sizeof(glm::mat4));
+	memcpy(this->joints, frame, this->bones.size() * sizeof(glm::mat3));
+
+	if (!this->currentAnim.empty())
+	{
+		auto anim = &this->anims.at(this->currentAnim);
+		anim->currentTime += dt;
+		while (anim->currentTime > anim->duration)
+		{
+			if (anim->repeat) anim->currentTime -= anim->duration;
+			else anim->currentTime = anim->duration;
+		}
+
+		for (auto& tl: anim->frames)
+		{
+			if (tl.frames.size() == 1)
+			{
+				frame[tl.bone] = glm::mat3_cast(tl.frames[0].rotation);
+				continue;
+			}
+			if (anim->currentTime == anim->duration)
+			{
+				frame[tl.bone] = glm::mat3_cast(tl.frames[tl.frames.size() - 1].rotation);
+				continue;
+			}
+
+			auto f1 = &tl.frames[tl.currentFrame];
+			auto f2 = &tl.frames[tl.currentFrame + 1];
+
+			if (f1->timestamp > anim->currentTime)
+			{
+				tl.currentFrame = 0;
+				f1 = &tl.frames[tl.currentFrame];
+				f2 = &tl.frames[tl.currentFrame + 1];
+			}
+
+			if (f2->timestamp <= anim->currentTime)
+			{
+				tl.currentFrame++;
+				f1 = &tl.frames[tl.currentFrame];
+				f2 = &tl.frames[tl.currentFrame + 1];
+			}
+
+			auto t = (anim->currentTime - f1->timestamp) / (f2->timestamp - f1->timestamp);
+			frame[tl.bone] = glm::mat3_cast(glm::slerp(
+				f1->rotation, f2->rotation,
+				ae::anim::applyInterpolation(tl.func, t)
+			));
+		}
+	}
+
+	for (usize i = 0; i < this->bones.size(); i++)
+	{
+		this->bones[i].update(bones, frame, this->ts, this->joints, i);
+	}
+
+	auto ibm = cam->shaderGetPos("ibm");
+	auto ts = cam->shaderGetPos("bones");
+	auto joints = cam->shaderGetPos("joints");
+	glUniformMatrix4fv(
+		ibm, this->bones.size(),
+		GL_FALSE, (f32*)this->inverseBindMatrices
+	);
+	glUniformMatrix4fv(
+		ts, this->bones.size(),
+		GL_FALSE, (f32*)this->ts
+	);
+	glUniformMatrix3fv(
+		joints, this->bones.size(),
+		GL_FALSE, (f32*)this->joints
+	);
+
+	delete[] frame;
+	delete[] bones;
+}
+
+void ae::mesh::Skeleton::render(ae::Camera* cam, glm::mat4 ts)
+{
+	auto pts = new glm::vec3[this->bones.size() * 2];
+	for (usize i = 0; i < this->bones.size(); i++)
+	{
+		pts[i*2+0] = this->ts[i] * glm::vec4(0, 0, 0, 1);
+		pts[i*2+1] = this->ts[i] * glm::vec4(0, this->bones[i].getLength(), 0, 1);
 	}
 	cam->shaderUse("skeleton");
 	cam->bindSkeletonVAO();
+	cam->shaderSetModel(ts);
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferData(
-		GL_ARRAY_BUFFER, points.size() * 12,
-		points.data(), GL_STATIC_DRAW
+		GL_ARRAY_BUFFER, this->bones.size() * 2 * sizeof(glm::vec3),
+		pts, GL_STATIC_DRAW
 	);
 	glVertexAttribPointer(
 		0, 3, GL_FLOAT, GL_FALSE, 12, 0
 	);
 	glDepthFunc(GL_ALWAYS);
-	glDrawArrays(GL_LINES, 0, points.size());
+	glDrawArrays(GL_LINES, 0, this->bones.size() * 2);
 	glDepthFunc(GL_LESS);
 }
 
-void ae::mesh::Skeleton::update()
+void ae::mesh::Skeleton::setAnimation(std::string name)
 {
-	for (usize i = 0; i < this->bones.size(); i++)
-	{
-		this->bones[i].update(glm::mat4(1.0));
-	}
-	// TODO update and bind matrices (ibm, transformations, rotations-only)
-}
-
-void ae::mesh::Skeleton::apply()
-{
-	// TODO
+	auto t = this->anims.find(name);
+	if (t == this->anims.end()) return;
+	this->currentAnim = name;
 }
 
 ae::gltf::GLTF* ae::gltf::load(const char* id)
@@ -459,6 +595,49 @@ ae::gltf::GLTF* ae::gltf::load(const char* id)
 			.joints = joints,
 			.name = x["name"].asString()
 		});
+	}
+
+	for (auto x: src["animations"])
+	{
+		// TODO count of channels and animations show 0/0
+		std::vector<Animation::Channel> channels;
+		std::vector<Animation::Sampler> samplers;
+		for (auto c: x["channels"])
+		{
+			using TP = Animation::Channel::TargetPath;
+			TP tp;
+			auto raw = c["target"]["path"].asString();
+			if (raw == "translation") tp = TP::Translation;
+			if (raw == "rotation") tp = TP::Rotation;
+			if (raw == "scale") tp = TP::Scale;
+			channels.push_back({
+				.sampler = (u16)c["sampler"].asUInt(),
+				.targetNode = (u16)c["target"]["node"].asUInt(),
+				.targetPath = tp
+			});
+		}
+		for (auto s: x["samplers"])
+		{
+			using IP = ae::anim::Interpolation;
+			IP ip;
+			auto raw = s["interpolation"].asString();
+			if (raw == "STEP") ip = IP::Step;
+			if (raw == "LINEAR") ip = IP::Linear;
+			if (raw == "CUBICSPLINE") ip = IP::CubicSpline;
+			samplers.push_back({
+				.input = (u16)s["input"].asUInt(),
+				.interpolation = ip,
+				.output = (u16)s["output"].asUInt()
+			});
+		}
+		Animation a {
+			.channels = channels,
+			.duration = x["extras"]["duration"].asFloat(),
+			.name = x["name"].asString(),
+			.samplers = samplers,
+			.repeat = x["extras"]["repeat"].asBool()
+		};
+		f->animations.push_back(a);
 	}
 
 	return f;

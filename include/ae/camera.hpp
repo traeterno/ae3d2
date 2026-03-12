@@ -53,13 +53,14 @@ public:
 	void bindSkeletonVAO();
 
 	void shaderUse(const char* id);
-	void shaderMat3(const char* uniform, glm::mat3 value, bool warn = true);
-	void shaderMat4(const char* uniform, glm::mat4 value, bool warn = true);
-	void shaderVec2(const char* uniform, glm::vec2 value, bool warn = true);
-	void shaderVec3(const char* uniform, glm::vec3 value, bool warn = true);
-	void shaderVec4(const char* uniform, glm::vec4 value, bool warn = true);
-	void shaderInt(const char* uniform, i32 value, bool warn = true);
+	void shaderMat3(const char* uniform, glm::mat3 value);
+	void shaderMat4(const char* uniform, glm::mat4 value);
+	void shaderVec2(const char* uniform, glm::vec2 value);
+	void shaderVec3(const char* uniform, glm::vec3 value);
+	void shaderVec4(const char* uniform, glm::vec4 value);
+	void shaderInt(const char* uniform, i32 value);
 	void shaderSetModel(glm::mat4 model);
+	i32 shaderGetPos(const char* uniform);
 private:
 	std::unordered_map<std::string, Texture> textures;
 	std::unordered_map<std::string, u32> shaders;

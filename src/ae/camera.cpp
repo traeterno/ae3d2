@@ -341,12 +341,12 @@ void Camera::shaderUse(const char* name)
 	glUseProgram(this->currentShader);
 }
 
-void Camera::shaderMat3(const char* uniform, glm::mat3 value, bool warn)
+void Camera::shaderMat3(const char* uniform, glm::mat3 value)
 {
 	i32 pos = glGetUniformLocation(this->currentShader, uniform);
 	if (pos == -1)
 	{
-		if (warn) printf("Uniform \"%s\" was not found (Shader #%i)\n",
+		printf("Uniform \"%s\" was not found (Shader #%i)\n",
 			uniform, this->currentShader
 		);
 		return;
@@ -357,12 +357,12 @@ void Camera::shaderMat3(const char* uniform, glm::mat3 value, bool warn)
 	);
 }
 
-void Camera::shaderMat4(const char* uniform, glm::mat4 value, bool warn)
+void Camera::shaderMat4(const char* uniform, glm::mat4 value)
 {
 	i32 pos = glGetUniformLocation(this->currentShader, uniform);
 	if (pos == -1)
 	{
-		if (warn) printf("Uniform \"%s\" was not found (Shader #%i)\n",
+		printf("Uniform \"%s\" was not found (Shader #%i)\n",
 			uniform, this->currentShader
 		);
 		return;
@@ -373,12 +373,12 @@ void Camera::shaderMat4(const char* uniform, glm::mat4 value, bool warn)
 	);
 }
 
-void Camera::shaderVec2(const char* uniform, glm::vec2 value, bool warn)
+void Camera::shaderVec2(const char* uniform, glm::vec2 value)
 {
 	i32 pos = glGetUniformLocation(this->currentShader, uniform);
 	if (pos == -1)
 	{
-		if (warn) printf("Uniform \"%s\" was not found (Shader #%i)\n",
+		printf("Uniform \"%s\" was not found (Shader #%i)\n",
 			uniform, this->currentShader
 		);
 		return;
@@ -386,12 +386,12 @@ void Camera::shaderVec2(const char* uniform, glm::vec2 value, bool warn)
 	glUniform2f(pos, value.x, value.y);
 }
 
-void Camera::shaderVec3(const char* uniform, glm::vec3 value, bool warn)
+void Camera::shaderVec3(const char* uniform, glm::vec3 value)
 {
 	i32 pos = glGetUniformLocation(this->currentShader, uniform);
 	if (pos == -1)
 	{
-		if (warn) printf("Uniform \"%s\" was not found (Shader #%i)\n",
+		printf("Uniform \"%s\" was not found (Shader #%i)\n",
 			uniform, this->currentShader
 		);
 		return;
@@ -399,12 +399,12 @@ void Camera::shaderVec3(const char* uniform, glm::vec3 value, bool warn)
 	glUniform3f(pos, value.x, value.y, value.z);
 }
 
-void Camera::shaderVec4(const char* uniform, glm::vec4 value, bool warn)
+void Camera::shaderVec4(const char* uniform, glm::vec4 value)
 {
 	i32 pos = glGetUniformLocation(this->currentShader, uniform);
 	if (pos == -1)
 	{
-		if (warn) printf("Uniform \"%s\" was not found (Shader #%i)\n",
+		printf("Uniform \"%s\" was not found (Shader #%i)\n",
 			uniform, this->currentShader
 		);
 		return;
@@ -412,12 +412,12 @@ void Camera::shaderVec4(const char* uniform, glm::vec4 value, bool warn)
 	glUniform4f(pos, value.x, value.y, value.z, value.w);
 }
 
-void Camera::shaderInt(const char* uniform, i32 value, bool warn)
+void Camera::shaderInt(const char* uniform, i32 value)
 {
 	i32 pos = glGetUniformLocation(this->currentShader, uniform);
 	if (pos == -1)
 	{
-		if (warn) printf("Uniform \"%s\" was not found (Shader #%i)\n",
+		printf("Uniform \"%s\" was not found (Shader #%i)\n",
 			uniform, this->currentShader
 		);
 		return;
@@ -430,6 +430,11 @@ void Camera::shaderSetModel(glm::mat4 model)
 	Camera::shaderMat4("matrix",
 		this->currentProj * this->currentView * model
 	);
+}
+
+i32 Camera::shaderGetPos(const char* uniform)
+{
+	return glGetUniformLocation(this->currentShader, uniform);
 }
 
 void Camera::textureUse(const char* name)

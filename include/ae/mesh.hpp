@@ -10,8 +10,45 @@ namespace ae { class Camera; }
 
 namespace ae::gltf { struct GLTF; }
 
+namespace ae::anim
+{
+
+enum class Interpolation { Step, Linear, CubicSpline };
+
+struct Keyframe
+{
+	f32 timestamp;
+	glm::quat rotation;
+};
+
+struct Timeline
+{
+	u16 bone;
+	Interpolation func;
+	std::vector<Keyframe> frames;
+	usize currentFrame;
+};
+
+struct Animation
+{
+	f32 duration, currentTime;
+	std::vector<Timeline> frames;
+	bool repeat;
+};
+
+f32 applyInterpolation(Interpolation ip, f32 t);
+std::tuple<std::string, Animation> loadAnimation(gltf::GLTF* file, u8 id);
+
+}
+
 namespace ae::mesh
 {
+
+class Bone;
+
+typedef std::vector<Bone> BoneList;
+using Mat4 = glm::mat4;
+using Mat3 = glm::mat3;
 
 class Bone
 {
@@ -19,14 +56,14 @@ public:
 	Bone();
 	Bone(gltf::GLTF* file, u16 id);
 	~Bone();
-	void update(glm::mat4 parent);
-	void render(std::vector<glm::vec3>* pts);
+	void update(Mat4* bones, Mat3* frame, Mat4* ts, Mat3* joints, u16 index);
+	u16 getID();
+	f32 getLength();
 private:
 	u16 id;
 	std::string name;
-	std::vector<Bone> children;
-	glm::mat4 ts;
-	glm::quat angle;
+	std::vector<u16> children;
+	glm::mat3 angle;
 	glm::mat4 translation;
 	f32 length;
 };
@@ -37,13 +74,16 @@ public:
 	Skeleton();
 	~Skeleton();
 	void load(gltf::GLTF* file, u8 id);
-	void update();
-	void render(ae::Camera* cam);
-	void apply();
+	void update(f32 dt, ae::Camera* cam);
+	void render(ae::Camera* cam, glm::mat4 ts);
+	void setAnimation(std::string name);
 private:
-	std::vector<glm::mat4> inverseBindMatrices;
-	std::vector<glm::mat4> joints;
-	std::vector<Bone> bones;
+	glm::mat4* inverseBindMatrices;
+	glm::mat4* ts;
+	glm::mat3* joints;
+	BoneList bones;
+	std::unordered_map<std::string, anim::Animation> anims;
+	std::string currentAnim;
 	u32 vbo;
 };
 
@@ -54,7 +94,7 @@ public:
 	~Mesh();
 	void load(gltf::GLTF* file, const char* id);
 	void destroy();
-	void render();
+	void render(f32 dt, glm::mat3 rotation, glm::mat4 ts);
 	Skeleton* getSkeleton();
 private:
 	u32 vbo;
@@ -123,10 +163,7 @@ struct Animation
 	struct Sampler
 	{
 		u16 input;
-		enum class Interpolation
-		{
-			CubicSpline, Linear, Step
-		} interpolation;
+		ae::anim::Interpolation interpolation;
 		u16 output;
 	};
 
@@ -134,6 +171,7 @@ struct Animation
 	f32 duration;
 	std::string name;
 	std::vector<Sampler> samplers;
+	bool repeat;
 };
 
 struct Mesh
