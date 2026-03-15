@@ -1,20 +1,20 @@
-local Sprite = require("sprite")
+-- local Sprite = require("sprite")
 local aeMath = require("aeMath")
 local Camera = require("camera")
 
-global spr: Sprite
+-- global spr: Sprite
 global cam: Camera
 global ts: aeMath.Transform
 
 local getInput: function(): aeMath.Vec3
 
 global function Init()
-	spr = Sprite.new()
-	spr:setTexture("global/icon")
-	local size = spr:getTextureSize()
-	spr:setOrigin(aeMath.Vec3.new(size.x * 0.5, size.y * 0.5, 0))
-	spr:setRotation(aeMath.Quat.new(0, 90, 0, true))
-	spr:setScale(aeMath.Vec3.new(0.05, 0.05, 0.05))
+	-- spr = Sprite.new()
+	-- spr:setTexture("global/icon")
+	-- local size = spr:getTextureSize()
+	-- spr:setOrigin(aeMath.Vec3.new(size.x * 0.5, size.y * 0.5, 0))
+	-- spr:setRotation(aeMath.Quat.new(0, 90, 0, true))
+	-- spr:setScale(aeMath.Vec3.new(0.05, 0.05, 0.05))
 
 	aeCamera.loadGLTF("heroV2")
 	aeEntity.loadMesh("heroV2", "Body")
@@ -49,7 +49,7 @@ global function Draw()
 	aeCamera.shaderVec3("camera", cam.direction)
 	aeEntity.draw(ts)
 	aeEntity.drawSkeleton(ts)
-	spr:draw()
+	-- spr:draw()
 end
 
 function getInput(): aeMath.Vec3

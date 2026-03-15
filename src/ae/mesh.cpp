@@ -1,6 +1,7 @@
 #include <ae/mesh.hpp>
 #include <ae/camera.hpp>
 #include <ae/global.hpp>
+#include <ae/gltf.hpp>
 
 #include <glad/glad.h>
 
@@ -148,23 +149,7 @@ ae::mesh::Skeleton* ae::mesh::Mesh::getSkeleton()
 	return this->sk;
 }
 
-ae::f32 ae::anim::applyInterpolation(
-	ae::anim::Interpolation ip, f32 t
-)
-{
-	using IP = ae::anim::Interpolation;
-	switch (ip)
-	{
-		case IP::Step: return 0;
-		case IP::Linear: return t;
-		case IP::CubicSpline: return t < 0.5 ?
-		(4 * pow(t, 3)) :
-		(1 - pow(-2 * t + 2, 3) * 0.5);
-	}
-	return 0;
-}
-
-std::tuple<std::string, ae::anim::Animation>
+std::pair<std::string, ae::anim::Animation>
 	ae::anim::loadAnimation(gltf::GLTF *file, u8 id)
 {
 	auto anim = &file->animations[id];
@@ -195,7 +180,7 @@ std::tuple<std::string, ae::anim::Animation>
 
 		for (u16 i = 0; i < ia->count; i++)
 		{
-			auto r = rot[i * 3 + 1];
+			auto r = rot[i*3+1];
 			tl.frames.push_back({
 				.timestamp = ts[i],
 				.rotation = glm::quat(r.w, r.x, r.y, r.z)
@@ -216,26 +201,29 @@ ae::mesh::Bone::Bone()
 	this->id = U16_MAX;
 }
 
-ae::mesh::Bone::Bone(gltf::GLTF* file, u16 id)
+ae::mesh::Bone::Bone(gltf::GLTF* file, u16 nodeID, u16* id)
 {
-	auto n = &file->nodes[id];
+	auto n = &file->nodes[nodeID];
 	
 	this->name = n->name;
-	this->id = id;
+	this->nodeID = nodeID;
+	this->id = (*id)++;
 	this->angle = glm::mat3_cast(n->rotation);
 	this->translation = glm::translate(glm::mat4(1.0), n->translation);
+
+	glm::vec3 v = this->angle * glm::vec3(0, 1, 0);
+	printf("%s %i | %.2f %.2f %.2f\n", this->name.c_str(), this->id, v.x, v.y, v.z);
 
 	if (!n->children.empty())
 	{
 		this->length = glm::length(file->nodes[n->children[0]].translation);
 	}
-	else { this->length = 0.5; }
+	else { this->length = 0.1; }
 
-	this->children = n->children;
-	
-	printf("%s %i\n",
-		n->name.c_str(), this->id
-	);
+	for (u16 i: n->children)
+	{
+		this->children.push_back(Bone(file, i, id));
+	}
 }
 
 ae::mesh::Bone::~Bone()
@@ -244,23 +232,26 @@ ae::mesh::Bone::~Bone()
 }
 
 void ae::mesh::Bone::update(
-	glm::mat4* bones, glm::mat3* frame, glm::mat4* ts, glm::mat3* joints,
-	u16 index
+	glm::mat4* ts, glm::mat3* j, glm::mat3* f, glm::mat4 pts, glm::mat3 pj
 )
 {
-	if (bones[this->id] == glm::mat4(1.0)) bones[this->id] = this->translation;
-	glm::mat4 parent = bones[this->id];
-	glm::mat3 state = frame[this->id];
+	if (pts == glm::mat4(0.0)) pts = this->translation;
+	if (f[this->nodeID] == glm::mat3(0.0)) f[this->nodeID] = this->angle;
+	j[this->id] = (pj * f[this->nodeID]) * glm::inverse(this->angle);
+	// j[this->id] = glm::mat3(1.0);
+	ts[this->id] = pts * glm::mat4(f[this->nodeID]);
 
-	ts[index] = parent * glm::mat4(state);
-	joints[index] = state * joints[index];
-	glm::mat4 t = glm::translate(glm::mat4(1.0), glm::vec3(0, this->length, 0));
+	glm::mat4 t = ts[this->id] * glm::translate(glm::mat4(1.0), {0, this->length, 0});
 
-	for (u16 i: this->children)
-	{
-		bones[i] = ts[index] * t;
-		joints[i] = joints[index];
-	}
+	for (auto& b: this->children) { b.update(ts, j, f, t, j[this->id]); }
+}
+
+void ae::mesh::Bone::render(glm::mat4* ts, glm::vec3* pts, u16* counter)
+{
+	pts[*counter * 2 + 0] = ts[*counter] * glm::vec4(0, 0, 0, 1);
+	pts[*counter * 2 + 1] = ts[*counter] * glm::vec4(0, this->length, 0, 1);
+	(*counter)++;
+	for (auto& b: this->children) b.render(ts, pts, counter);
 }
 
 ae::u16 ae::mesh::Bone::getID() { return this->id; }
@@ -292,39 +283,47 @@ void ae::mesh::Skeleton::load(gltf::GLTF* file, u8 id)
 	auto ma = &file->accessors[skin->inverseBindMatrices];
 	auto mbv = &file->bufferViews[ma->bufferView];
 	auto ibm = (glm::mat4*)&file->buffers[mbv->buffer].data[mbv->byteOffset];
+
+	this->bonesCount = skin->joints.size();
 	
-	this->ts = new glm::mat4[skin->joints.size()];
-	this->joints = new glm::mat3[skin->joints.size()];
-	this->inverseBindMatrices = new glm::mat4[skin->joints.size()];
-	memcpy(this->inverseBindMatrices, ibm, skin->joints.size() * sizeof(glm::mat4));
+	this->ts = new glm::mat4[this->bonesCount];
+	this->joints = new glm::mat3[this->bonesCount];
+	this->inverseBindMatrices = new glm::mat4[this->bonesCount];
+
+	auto inherit = new bool[this->bonesCount];
+	memset(inherit, 0, this->bonesCount);
 	
-	this->bones.resize(skin->joints.size());
-	for (usize i = 0; i < skin->joints.size(); i++)
+	for (usize i = 0; i < this->bonesCount; i++)
 	{
-		this->bones[i] = Bone(file, skin->joints[i]);
+		this->inverseBindMatrices[i] = ibm[i];
+		for (u16 id: file->nodes[skin->joints[i]].children)
+		{
+			inherit[id] = true;
+		}
 	}
+
+	u16 counter = 0;
+	for (usize i = 0; i < this->bonesCount; i++)
+	{
+		if (!inherit[i]) this->bones.push_back(Bone(file, i, &counter));
+	}
+	delete[] inherit;
 
 	for (u8 i = 0; i < file->animations.size(); i++)
 	{
-		auto [
-			name, anim
-		] = anim::loadAnimation(file, i);
-		this->anims.insert({name, anim});
+		this->anims.insert(anim::loadAnimation(file, i));
 	}
 }
 
 void ae::mesh::Skeleton::update(f32 dt, ae::Camera* cam)
 {
-	auto frame = new glm::mat3[this->bones.size()];
-	auto bones = new glm::mat4[this->bones.size()];
-
-	for (usize i = 0; i < this->bones.size(); i++)
+	auto frame = new glm::mat3[this->bonesCount];
+	for (usize i = 0; i < this->bonesCount; i++)
 	{
-		bones[i] = glm::mat4(1.0);
-		frame[i] = glm::mat3(1.0);
+		frame[i] = glm::mat3(!this->currentAnim.empty());
+		this->joints[i] = glm::mat3(1.0);
+		this->ts[i] = glm::mat4(0.0);
 	}
-	memcpy(this->ts, bones, this->bones.size() * sizeof(glm::mat4));
-	memcpy(this->joints, frame, this->bones.size() * sizeof(glm::mat3));
 
 	if (!this->currentAnim.empty())
 	{
@@ -369,58 +368,58 @@ void ae::mesh::Skeleton::update(f32 dt, ae::Camera* cam)
 			auto t = (anim->currentTime - f1->timestamp) / (f2->timestamp - f1->timestamp);
 			frame[tl.bone] = glm::mat3_cast(glm::slerp(
 				f1->rotation, f2->rotation,
-				ae::anim::applyInterpolation(tl.func, t)
+				ae::gltf::applyInterpolation(tl.func, t)
 			));
 		}
 	}
 
-	for (usize i = 0; i < this->bones.size(); i++)
+	for (auto& bone: this->bones)
 	{
-		this->bones[i].update(bones, frame, this->ts, this->joints, i);
+		bone.update(
+			this->ts, this->joints, frame,
+			glm::mat4(0.0), glm::mat3(1.0)
+		);
 	}
 
 	auto ibm = cam->shaderGetPos("ibm");
 	auto ts = cam->shaderGetPos("bones");
 	auto joints = cam->shaderGetPos("joints");
 	glUniformMatrix4fv(
-		ibm, this->bones.size(),
+		ibm, this->bonesCount,
 		GL_FALSE, (f32*)this->inverseBindMatrices
 	);
 	glUniformMatrix4fv(
-		ts, this->bones.size(),
+		ts, this->bonesCount,
 		GL_FALSE, (f32*)this->ts
 	);
 	glUniformMatrix3fv(
-		joints, this->bones.size(),
+		joints, this->bonesCount,
 		GL_FALSE, (f32*)this->joints
 	);
 
 	delete[] frame;
-	delete[] bones;
 }
 
 void ae::mesh::Skeleton::render(ae::Camera* cam, glm::mat4 ts)
 {
-	auto pts = new glm::vec3[this->bones.size() * 2];
-	for (usize i = 0; i < this->bones.size(); i++)
-	{
-		pts[i*2+0] = this->ts[i] * glm::vec4(0, 0, 0, 1);
-		pts[i*2+1] = this->ts[i] * glm::vec4(0, this->bones[i].getLength(), 0, 1);
-	}
+	u16 counter = 0;
+	auto pts = new glm::vec3[this->bonesCount * 2];
+	for (auto& b: this->bones) b.render(this->ts, pts, &counter);
 	cam->shaderUse("skeleton");
 	cam->bindSkeletonVAO();
 	cam->shaderSetModel(ts);
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferData(
-		GL_ARRAY_BUFFER, this->bones.size() * 2 * sizeof(glm::vec3),
+		GL_ARRAY_BUFFER, this->bonesCount * 2 * sizeof(glm::vec3),
 		pts, GL_STATIC_DRAW
 	);
 	glVertexAttribPointer(
 		0, 3, GL_FLOAT, GL_FALSE, 12, 0
 	);
 	glDepthFunc(GL_ALWAYS);
-	glDrawArrays(GL_LINES, 0, this->bones.size() * 2);
+	glDrawArrays(GL_LINES, 0, this->bonesCount * 2);
 	glDepthFunc(GL_LESS);
+	delete[] pts;
 }
 
 void ae::mesh::Skeleton::setAnimation(std::string name)
@@ -428,217 +427,4 @@ void ae::mesh::Skeleton::setAnimation(std::string name)
 	auto t = this->anims.find(name);
 	if (t == this->anims.end()) return;
 	this->currentAnim = name;
-}
-
-ae::gltf::GLTF* ae::gltf::load(const char* id)
-{
-	auto src = ae::fs::readJSON(ae::str::format(
-		"res/meshes/%s.gltf", id
-	));
-	if (src.empty())
-	{
-		printf("Error while loading GLTF \"%s\": file is empty\n", id);
-		return nullptr;
-	}
-
-	auto f = new GLTF;
-
-	for (auto x: src["buffers"])
-	{
-		auto uri = ae::str::format("res/meshes/%s", x["uri"].asCString());
-		auto len = x["byteLength"].asUInt();
-		auto [length, data] = ae::fs::readBinary(uri);
-		if (len != length)
-		{
-			printf("WARNING: GLTF \"%s\": Lengths are not the same(%i|%u)\n",
-				x["uri"].asCString(), len, length
-			);
-		}
-		f->buffers.push_back({
-			.data = data,
-			.byteLength = length
-		});
-	}
-
-	for (auto x: src["bufferViews"])
-	{
-		f->bufferViews.push_back({
-			.buffer = (u8)x["buffer"].asUInt(),
-			.byteOffset = x["byteOffset"].asUInt(),
-			.byteLength = x["byteLength"].asUInt(),
-			.target = (u16)x["target"].asUInt()
-		});
-	}
-
-	for (auto x: src["accessors"])
-	{
-		f->accessors.push_back({
-			.bufferView = (u16)x["bufferView"].asUInt(),
-			.componentType = (u16)x["componentType"].asUInt(),
-			.count = x["count"].asUInt(),
-			.type = x["type"].asString()
-		});
-	}
-
-	f->scene = src["scene"].asUInt();
-
-	for (auto x: src["scenes"])
-	{
-		Scene s;
-		for (auto y: x["nodes"])
-		{
-			s.nodes.push_back(y.asUInt());
-		}
-		f->scenes.push_back(s);
-	}
-
-	for (auto x: src["nodes"])
-	{
-		Node n {
-			.children = {},
-			.mesh = U8_MAX,
-			.skin = U8_MAX,
-			.name = x["name"].asString(),
-			.rotation = glm::quat(),
-			.translation = glm::vec3(),
-			.scale = glm::vec3()
-		};
-		if (!x["mesh"].isNull()) n.mesh = x["mesh"].asUInt();
-		if (!x["skin"].isNull()) n.skin = x["skin"].asUInt();
-		if (x["rotation"].isArray())
-		{
-			auto r = x["rotation"];
-			n.rotation = glm::quat(
-				r[3].asFloat(), r[0].asFloat(),
-				r[1].asFloat(), r[2].asFloat()
-			);
-		}
-		if (x["translation"].isArray())
-		{
-			auto t = x["translation"];
-			n.translation = glm::vec3(
-				t[0].asFloat(), t[1].asFloat(), t[2].asFloat()
-			);
-		}
-		if (x["scale"].isArray())
-		{
-			auto s = x["scale"];
-			n.scale = glm::vec3(
-				s[0].asFloat(), s[1].asFloat(), s[2].asFloat()
-			);
-		}
-		for (auto y: x["children"])
-		{
-			n.children.push_back(y.asUInt());
-		}
-		f->nodes.push_back(n);
-	}
-	
-	for (auto x: src["meshes"])
-	{
-		auto p = x["primitives"][0];
-		auto a = p["attributes"];
-		f->meshes.push_back({
-			.name = x["name"].asString(),
-			.vertices = (u16)a["POSITION"].asUInt(),
-			.normal = (u16)a["NORMAL"].asUInt(),
-			.texCoord = a["TEXCOORD_0"].isNull() ? U16_MAX : (u16)a["TEXCOORD_0"].asUInt(),
-			.joints = a["JOINTS_0"].isNull() ? U16_MAX : (u16)a["JOINTS_0"].asUInt(),
-			.weights = a["WEIGHTS_0"].isNull() ? U16_MAX : (u16)a["WEIGHTS_0"].asUInt(),
-			.indices = (u16)p["indices"].asUInt(),
-			.material = p["material"].isNull() ? U8_MAX : (u8)p["material"].asUInt()
-		});
-	}
-
-	for (auto x: src["materials"])
-	{
-		f->materials.push_back({
-			.name = x["name"].asString(),
-			.texture = (u8)x["pbrMetallicRoughness"]
-				["baseColorTexture"]["index"].asUInt()
-		});
-	}
-
-	for (auto x: src["textures"])
-	{
-		f->textures.push_back({
-			.sampler = (u8)x["sampler"].asUInt(),
-			.source = (u8)x["source"].asUInt()
-		});
-	}
-
-	for (auto x: src["samplers"])
-	{
-		f->samplers.push_back({
-			.magFilter = (u16)x["magFilter"].asUInt(),
-			.minFilter = (u16)x["minFilter"].asUInt(),
-			.wrapS = (u16)x["wrapS"].asUInt(),
-			.wrapT = (u16)x["wrapT"].asUInt()
-		});
-	}
-
-	for (auto x: src["images"])
-	{
-		f->images.push_back({
-			.mimeType = x["mimeType"].asString(),
-			.name = x["name"].asString(),
-			.uri = x["uri"].asString()
-		});
-	}
-
-	for (auto x: src["skins"])
-	{
-		std::vector<u16> joints;
-		for (auto y: x["joints"]) joints.push_back(y.asUInt());
-		f->skins.push_back({
-			.inverseBindMatrices = (u8)x["inverseBindMatrices"].asUInt(),
-			.joints = joints,
-			.name = x["name"].asString()
-		});
-	}
-
-	for (auto x: src["animations"])
-	{
-		// TODO count of channels and animations show 0/0
-		std::vector<Animation::Channel> channels;
-		std::vector<Animation::Sampler> samplers;
-		for (auto c: x["channels"])
-		{
-			using TP = Animation::Channel::TargetPath;
-			TP tp;
-			auto raw = c["target"]["path"].asString();
-			if (raw == "translation") tp = TP::Translation;
-			if (raw == "rotation") tp = TP::Rotation;
-			if (raw == "scale") tp = TP::Scale;
-			channels.push_back({
-				.sampler = (u16)c["sampler"].asUInt(),
-				.targetNode = (u16)c["target"]["node"].asUInt(),
-				.targetPath = tp
-			});
-		}
-		for (auto s: x["samplers"])
-		{
-			using IP = ae::anim::Interpolation;
-			IP ip;
-			auto raw = s["interpolation"].asString();
-			if (raw == "STEP") ip = IP::Step;
-			if (raw == "LINEAR") ip = IP::Linear;
-			if (raw == "CUBICSPLINE") ip = IP::CubicSpline;
-			samplers.push_back({
-				.input = (u16)s["input"].asUInt(),
-				.interpolation = ip,
-				.output = (u16)s["output"].asUInt()
-			});
-		}
-		Animation a {
-			.channels = channels,
-			.duration = x["extras"]["duration"].asFloat(),
-			.name = x["name"].asString(),
-			.samplers = samplers,
-			.repeat = x["extras"]["repeat"].asBool()
-		};
-		f->animations.push_back(a);
-	}
-
-	return f;
 }

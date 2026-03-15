@@ -4,6 +4,7 @@
 #include <ae/window.hpp>
 #include <ae/global.hpp>
 #include <ae/font.hpp>
+#include <ae/gltf.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>

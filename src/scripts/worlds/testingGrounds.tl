@@ -12,7 +12,8 @@ global function Init()
 	cam = Camera.new()
 	cam.speed = 0.05
 	cam.position.z = -2.5
-	cam.position.y = 1
+	-- cam.position.y = 5
+	-- cam.orientation.y = -30
 
 	cam:apply()
 end
@@ -20,5 +21,6 @@ end
 global function Update()
 	cam:noclip()
 	aeCamera.shaderUse("mesh")
-	aeCamera.shaderVec3("camera", aeMath.Vec3.new(0, 0, 1))
+	-- aeCamera.shaderVec3("camera", aeMath.Vec3.new(0, -1, 0))
+	aeCamera.shaderVec3("camera", cam.direction)
 end

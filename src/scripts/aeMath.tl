@@ -66,7 +66,7 @@ end
 function Transform.new(): Transform
 	local self: Transform = setmetatable({}, { __index = Transform })
 	self.pos = Vec3.new(0, 0, 0)
-	self.angle = Quat.new(0, 0, 0, false)
+	self.angle = Quat.new(0, 0, 0, true)
 	self.scale = Vec3.new(1, 1, 1)
 	self.origin = Vec3.new(0, 0, 0)
 	return self
