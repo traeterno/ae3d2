@@ -1,55 +1,70 @@
--- local Sprite = require("sprite")
 local aeMath = require("aeMath")
 local Camera = require("camera")
 
--- global spr: Sprite
-global cam: Camera
-global ts: aeMath.Transform
+local cam: Camera
+local ts: aeMath.Transform
+local distance: number
+local camHeight: number
+local debugger: boolean
 
 local getInput: function(): aeMath.Vec3
 
 global function Init()
-	-- spr = Sprite.new()
-	-- spr:setTexture("global/icon")
-	-- local size = spr:getTextureSize()
-	-- spr:setOrigin(aeMath.Vec3.new(size.x * 0.5, size.y * 0.5, 0))
-	-- spr:setRotation(aeMath.Quat.new(0, 90, 0, true))
-	-- spr:setScale(aeMath.Vec3.new(0.05, 0.05, 0.05))
 
 	aeCamera.loadGLTF("heroV2")
 	aeEntity.loadMesh("heroV2", "Body")
 	aeCamera.unloadGLTF("heroV2")
 
+	distance = 2.5
+	camHeight = 1.25
+
+	aeEntity.setAnimation("Summon")
+	-- aeEntity.setAnimation("IdleUpper")
+	aeEntity.setAnimation("IdleLower")
+
 	cam = Camera.new()
 	cam.distance = 2.5
 	cam.orientation.y = -45
+	cam.orientation.x = 90
 	cam:apply()
-	ts = aeMath.Transform.new()
-	ts.angle.yaw = 180
-	cam:follow(ts.pos, 1.5)
 
-	aeEntity.setAnimation("anim")
+	ts = aeMath.Transform.new()
+	ts.angle.yaw = 90
+	ts.pos.y = 0.25
+	ts.pos.x = 0.55
+	cam:follow(ts.pos, camHeight)
+
+	debugger = false
 end
 
 global function Update()
+	local dt = aeWindow.dt()
 	cam:rotate()
+
+	if aeWindow.keyJustPressed("Q") then
+		debugger = not debugger
+		aeCamera.shaderUse("mesh")
+		aeCamera.shaderInt("debug", debugger and 1 or 0)
+	end
+
+	distance = aeMath.clamp(distance + aeWindow.scroll().y * 0.5, 0.5, 5)
+	cam.distance = aeMath.lerp(cam.distance, distance, dt * 10)
 
 	local input = getInput()
 	if input.x == 0 and input.z == 0 then return end
 	local angle = 270 - (cam.orientation.x + math.deg(math.atan2(input.z, input.x)))
-	ts.angle.yaw = aeMath.rotationLerp(ts.angle.yaw, angle, 10 * aeWindow.dt())
+	ts.angle.yaw = aeMath.rotationLerp(ts.angle.yaw, angle, 10 * dt)
 
 	ts.pos.x = ts.pos.x - math.sin(math.rad(angle)) * 0.05
 	ts.pos.z = ts.pos.z - math.cos(math.rad(angle)) * 0.05
-	cam:follow(ts.pos, 1.5)
+	cam:follow(ts.pos, camHeight)
 end
 
 global function Draw()
 	aeCamera.shaderUse("mesh")
 	aeCamera.shaderVec3("camera", cam.direction)
 	aeEntity.draw(ts)
-	aeEntity.drawSkeleton(ts)
-	-- spr:draw()
+	-- aeEntity.drawSkeleton(ts)
 end
 
 function getInput(): aeMath.Vec3

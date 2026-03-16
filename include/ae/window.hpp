@@ -39,6 +39,7 @@ public:
 	Camera* getCamera();
 	world::World* getWorld();
 	KeyEvent key;
+	glm::vec2 scroll;
 private:
 	std::chrono::time_point<hrc> deltaTimer;
 	f32 deltaTime;

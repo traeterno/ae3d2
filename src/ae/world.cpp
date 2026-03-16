@@ -91,6 +91,7 @@ void World::update()
 
 	if (!this->ready)
 	{
+		this->ready = true;
 		if (!ae::script::runFunction(this->state, "Init"))
 		{
 			lua_close(this->state);
@@ -101,7 +102,6 @@ void World::update()
 		{
 			e.second->init();
 		}
-		this->ready = true;
 	}
 
 	if (!ae::script::runFunction(this->state, "Update"))
@@ -135,6 +135,7 @@ void World::spawn(const char* id, const char* name)
 {
 	auto e = new Entity(this->window, id, name);
 	this->ents.insert({std::string(id), e});
+	if (this->ready) e->init();
 }
 
 Entity::Entity(ae::Window* win, const char* id, const char* path):

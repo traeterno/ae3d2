@@ -14,15 +14,21 @@ void errorCallback(int id, const char* description)
 void resizeCallback(GLFWwindow* win, int w, int h)
 {
 	glViewport(0, 0, w, h);
-	Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(win));
+	auto window = (Window*)glfwGetWindowUserPointer(win);
 	window->getUI()->resized();
 	window->getCamera()->resized();
 }
 
 void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
 {
-	Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(win));
+	auto window = (Window*)glfwGetWindowUserPointer(win);
 	window->key = KeyEvent { .key = key, .mods = mods, .action = action };
+}
+
+void scrollCallback(GLFWwindow* win, double x, double y)
+{
+	auto window = (Window*)glfwGetWindowUserPointer(win);
+	window->scroll = {x, y};
 }
 
 UI* Window::getUI() { return &this->ui; }
@@ -95,6 +101,7 @@ Window::Window(std::string path, int argc, char* argv[]):
 	glfwSetWindowUserPointer(this->window, this);
 	glfwSetFramebufferSizeCallback(this->window, resizeCallback);
 	glfwSetKeyCallback(this->window, keyCallback);
+	glfwSetScrollCallback(this->window, scrollCallback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -163,6 +170,7 @@ bool Window::keyPressed(std::string key)
 void Window::update()
 {
 	this->key = {0, 0, 0};
+	this->scroll = {0, 0};
 	glfwPollEvents();
 	auto p = hrc::now();
 	constexpr f32 scaler = 1e-6;

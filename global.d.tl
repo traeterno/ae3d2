@@ -10,6 +10,7 @@ global record aeWindow
 	uiSize: function(): aeMath.Vec2
 	dt: function(): number
 	isFocused: function(): boolean
+	scroll: function(): aeMath.Vec2
 end
 
 global record aeCamera
@@ -45,6 +46,7 @@ global record aeEntity
 	draw: function(aeMath.Transform)
 	drawSkeleton: function(aeMath.Transform)
 	setAnimation: function(string)
+	stopAnimation: function(string)
 end
 
 global _winptr: integer

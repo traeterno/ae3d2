@@ -47,7 +47,7 @@ public:
 	Bone();
 	Bone(gltf::GLTF* file, u16 nodeID, u16* id);
 	~Bone();
-	void update(glm::mat4* ts, glm::mat3* j, glm::mat3* f, glm::mat4 pts, glm::mat3 pj);
+	void update(glm::mat4* ts, glm::mat3* f, glm::mat4 pts);
 	u16 getID();
 	f32 getLength();
 	void render(glm::mat4* ts, glm::vec3* pts, u16* counter);
@@ -69,13 +69,13 @@ public:
 	void update(f32 dt, ae::Camera* cam);
 	void render(ae::Camera* cam, glm::mat4 ts);
 	void setAnimation(std::string name);
+	void stopAnimation(std::string name);
 private:
 	glm::mat4* inverseBindMatrices;
 	glm::mat4* ts;
-	glm::mat3* joints;
 	std::vector<Bone> bones;
 	std::unordered_map<std::string, anim::Animation> anims;
-	std::string currentAnim;
+	std::vector<std::string> currentAnim;
 	u32 vbo;
 	u16 bonesCount;
 };

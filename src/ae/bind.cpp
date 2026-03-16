@@ -231,6 +231,13 @@ LUA(window_isFocused)
 	return 1;
 }
 
+LUA(window_scroll)
+{
+	auto w = getWindow(script);
+	vec2_lua(script, w->scroll);
+	return 1;
+}
+
 void ae::bind::window(lua_State* script)
 {
 	lua_createtable(script, 0, 8);
@@ -243,6 +250,7 @@ void ae::bind::window(lua_State* script)
 	insertFunction(script, "uiSize", ae_window_uiSize);
 	insertFunction(script, "dt", ae_window_dt);
 	insertFunction(script, "isFocused", ae_window_isFocused);
+	insertFunction(script, "scroll", ae_window_scroll);
 	lua_setglobal(script, "aeWindow");
 }
 
@@ -484,6 +492,15 @@ LUA(entity_setAnimation)
 	return 0;
 }
 
+LUA(entity_stopAnimation)
+{
+	auto sk = getEntity(script)->getMesh()->getSkeleton();
+	if (sk == nullptr) return 0;
+	const char* anim = lua_tostring(script, -3);
+	sk->stopAnimation(anim);
+	return 0;
+}
+
 void ae::bind::entity(lua_State* script)
 {
 	lua_createtable(script, 0, 3);
@@ -491,5 +508,6 @@ void ae::bind::entity(lua_State* script)
 	insertFunction(script, "draw", ae_entity_draw);
 	insertFunction(script, "drawSkeleton", ae_entity_drawSkeleton);
 	insertFunction(script, "setAnimation", ae_entity_setAnimation);
+	insertFunction(script, "stopAnimation", ae_entity_stopAnimation);
 	lua_setglobal(script, "aeEntity");
 }

@@ -11,6 +11,7 @@ ae::mesh::Mesh::Mesh(ae::Camera* camera)
 	this->vbo = camera->createVBO();
 	this->ebo = camera->createVBO();
 	this->cam = camera;
+	this->sk = nullptr;
 	this->texture = 0;
 }
 
@@ -18,7 +19,7 @@ ae::mesh::Mesh::~Mesh()
 {
 	this->vbo = 0;
 	this->ebo = 0;
-	delete this->sk;
+	if (this->sk != nullptr) delete this->sk;
 }
 
 void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
@@ -57,11 +58,24 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 	auto tbv = &file->bufferViews[ta->bufferView];
 	auto uvs = (glm::vec2*)&file->buffers[tbv->buffer]
 		.data[tbv->byteOffset];
+	
+	glm::u8vec4* joints = nullptr;
 
-	auto ja = &file->accessors[m->joints];
-	auto jbv = &file->bufferViews[ja->bufferView];
-	auto joints = (glm::u8vec4*)&file->buffers[jbv->buffer]
-		.data[jbv->byteOffset];
+	if (m->joints != U16_MAX)
+	{
+		auto ja = &file->accessors[m->joints];
+		auto jbv = &file->bufferViews[ja->bufferView];
+		joints = (glm::u8vec4*)&file->buffers[jbv->buffer]
+			.data[jbv->byteOffset];
+	}
+	else
+	{
+		joints = new glm::u8vec4[va->count];
+		for (usize i = 0; i < va->count; i++)
+		{
+			joints[i].x = 255;
+		}
+	}
 
 	auto buf = new f32[va->count * 9];
 
@@ -72,6 +86,8 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 		buf[i*9+6] = (f32)joints[i].x;
 		(*(glm::vec2*)&buf[i*9+7]) = uvs[i];
 	}
+
+	if (m->joints == U16_MAX) delete[] joints;
 	
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferData(
@@ -118,7 +134,11 @@ void ae::mesh::Mesh::destroy()
 	this->cam->removeVBO(this->vbo);
 	this->cam->removeVBO(this->ebo);
 	glDeleteTextures(1, &this->texture);
-	if (this->sk != nullptr) delete this->sk;
+	if (this->sk != nullptr)
+	{
+		delete this->sk;
+		this->sk = nullptr;
+	}
 	this->cam = nullptr;
 }
 
@@ -211,9 +231,6 @@ ae::mesh::Bone::Bone(gltf::GLTF* file, u16 nodeID, u16* id)
 	this->angle = glm::mat3_cast(n->rotation);
 	this->translation = glm::translate(glm::mat4(1.0), n->translation);
 
-	glm::vec3 v = this->angle * glm::vec3(0, 1, 0);
-	printf("%s %i | %.2f %.2f %.2f\n", this->name.c_str(), this->id, v.x, v.y, v.z);
-
 	if (!n->children.empty())
 	{
 		this->length = glm::length(file->nodes[n->children[0]].translation);
@@ -231,19 +248,15 @@ ae::mesh::Bone::~Bone()
 	this->children.clear();
 }
 
-void ae::mesh::Bone::update(
-	glm::mat4* ts, glm::mat3* j, glm::mat3* f, glm::mat4 pts, glm::mat3 pj
-)
+void ae::mesh::Bone::update(glm::mat4* ts, glm::mat3* f, glm::mat4 pts)
 {
 	if (pts == glm::mat4(0.0)) pts = this->translation;
 	if (f[this->nodeID] == glm::mat3(0.0)) f[this->nodeID] = this->angle;
-	j[this->id] = (pj * f[this->nodeID]) * glm::inverse(this->angle);
-	// j[this->id] = glm::mat3(1.0);
 	ts[this->id] = pts * glm::mat4(f[this->nodeID]);
 
 	glm::mat4 t = ts[this->id] * glm::translate(glm::mat4(1.0), {0, this->length, 0});
 
-	for (auto& b: this->children) { b.update(ts, j, f, t, j[this->id]); }
+	for (auto& b: this->children) { b.update(ts, f, t); }
 }
 
 void ae::mesh::Bone::render(glm::mat4* ts, glm::vec3* pts, u16* counter)
@@ -261,10 +274,9 @@ ae::mesh::Skeleton::Skeleton()
 {
 	this->inverseBindMatrices = nullptr;
 	this->ts = nullptr;
-	this->joints = nullptr;
 	this->bones = {};
 	this->anims = {};
-	this->currentAnim = std::string();
+	this->currentAnim = {};
 	glGenBuffers(1, &this->vbo);
 }
 
@@ -272,7 +284,6 @@ ae::mesh::Skeleton::~Skeleton()
 {
 	delete[] this->inverseBindMatrices;
 	delete[] this->ts;
-	delete[] this->joints;
 	glDeleteBuffers(1, &this->vbo);
 }
 
@@ -287,7 +298,6 @@ void ae::mesh::Skeleton::load(gltf::GLTF* file, u8 id)
 	this->bonesCount = skin->joints.size();
 	
 	this->ts = new glm::mat4[this->bonesCount];
-	this->joints = new glm::mat3[this->bonesCount];
 	this->inverseBindMatrices = new glm::mat4[this->bonesCount];
 
 	auto inherit = new bool[this->bonesCount];
@@ -321,13 +331,12 @@ void ae::mesh::Skeleton::update(f32 dt, ae::Camera* cam)
 	for (usize i = 0; i < this->bonesCount; i++)
 	{
 		frame[i] = glm::mat3(!this->currentAnim.empty());
-		this->joints[i] = glm::mat3(1.0);
 		this->ts[i] = glm::mat4(0.0);
 	}
 
-	if (!this->currentAnim.empty())
+	for (usize i = 0; i < this->currentAnim.size(); i++)
 	{
-		auto anim = &this->anims.at(this->currentAnim);
+		auto anim = &this->anims.at(this->currentAnim[i]);
 		anim->currentTime += dt;
 		while (anim->currentTime > anim->duration)
 		{
@@ -375,15 +384,11 @@ void ae::mesh::Skeleton::update(f32 dt, ae::Camera* cam)
 
 	for (auto& bone: this->bones)
 	{
-		bone.update(
-			this->ts, this->joints, frame,
-			glm::mat4(0.0), glm::mat3(1.0)
-		);
+		bone.update(this->ts, frame, glm::mat4(0.0));
 	}
 
 	auto ibm = cam->shaderGetPos("ibm");
 	auto ts = cam->shaderGetPos("bones");
-	auto joints = cam->shaderGetPos("joints");
 	glUniformMatrix4fv(
 		ibm, this->bonesCount,
 		GL_FALSE, (f32*)this->inverseBindMatrices
@@ -391,10 +396,6 @@ void ae::mesh::Skeleton::update(f32 dt, ae::Camera* cam)
 	glUniformMatrix4fv(
 		ts, this->bonesCount,
 		GL_FALSE, (f32*)this->ts
-	);
-	glUniformMatrix3fv(
-		joints, this->bonesCount,
-		GL_FALSE, (f32*)this->joints
 	);
 
 	delete[] frame;
@@ -426,5 +427,22 @@ void ae::mesh::Skeleton::setAnimation(std::string name)
 {
 	auto t = this->anims.find(name);
 	if (t == this->anims.end()) return;
-	this->currentAnim = name;
+	for (auto& x: this->currentAnim)
+	{
+		if (x == name) return;
+	}
+	t->second.currentTime = 0.0;
+	this->currentAnim.push_back(name);
+}
+
+void ae::mesh::Skeleton::stopAnimation(std::string name)
+{
+	for (usize i = 0; i < this->currentAnim.size(); i++)
+	{
+		if (this->currentAnim[i] == name)
+		{
+			this->currentAnim[i] = this->currentAnim[this->currentAnim.size() - 1];
+			this->currentAnim.pop_back();
+		}
+	}
 }
