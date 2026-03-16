@@ -408,6 +408,13 @@ LUA(camera_unloadGLTF)
 	return 0;
 }
 
+LUA(camera_setModelMatrix)
+{
+	auto [rot, ts] = lua_ts(script);
+	getWindow(script)->getCamera()->shaderSetModel(ts);
+	return 0;
+}
+
 void ae::bind::camera(lua_State* script)
 {
 	lua_createtable(script, 0, 19);

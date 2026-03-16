@@ -5,7 +5,6 @@ local cam: Camera
 local ts: aeMath.Transform
 local distance: number
 local camHeight: number
-local debugger: boolean
 
 local getInput: function(): aeMath.Vec3
 
@@ -33,19 +32,11 @@ global function Init()
 	ts.pos.y = 0.25
 	ts.pos.x = 0.55
 	cam:follow(ts.pos, camHeight)
-
-	debugger = false
 end
 
 global function Update()
 	local dt = aeWindow.dt()
 	cam:rotate()
-
-	if aeWindow.keyJustPressed("Q") then
-		debugger = not debugger
-		aeCamera.shaderUse("mesh")
-		aeCamera.shaderInt("debug", debugger and 1 or 0)
-	end
 
 	distance = aeMath.clamp(distance + aeWindow.scroll().y * 0.5, 0.5, 5)
 	cam.distance = aeMath.lerp(cam.distance, distance, dt * 10)
@@ -61,8 +52,8 @@ global function Update()
 end
 
 global function Draw()
-	aeCamera.shaderUse("mesh")
-	aeCamera.shaderVec3("camera", cam.direction)
+	-- aeCamera.shaderUse("mesh")
+	-- aeCamera.shaderVec3("camera", cam.direction)
 	aeEntity.draw(ts)
 	-- aeEntity.drawSkeleton(ts)
 end

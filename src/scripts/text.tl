@@ -34,7 +34,7 @@ end
 
 function Text:draw()
 	aeCamera.shaderUse("text")
-	aeCamera.setModelMatrix(self.ts)
+	aeCamera.setModelMatrix(self.ts) -- TODO remove
 	aeCamera.shaderVec4("clr", self.color)
 	aeCamera.drawText(self.id, self.len)
 end

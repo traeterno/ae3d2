@@ -32,6 +32,7 @@ global record aeCamera
 	lookAt: function(table)
 	loadGLTF: function(string)
 	unloadGLTF: function(string)
+	setModelMatrix: function(aeMath.Transform)
 end
 
 -- TODO remove 'setModelMatrix'; pass transform as 'drawX' argument
