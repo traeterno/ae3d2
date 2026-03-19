@@ -1,4 +1,4 @@
-#include "ae/bind.hpp"
+#include <ae/bind.hpp>
 #include <ae/world.hpp>
 #include <ae/global.hpp>
 #include <ae/window.hpp>
@@ -75,7 +75,6 @@ bool World::load(const char* name)
 		printf("Failed to load world\n");
 		return false;
 	}
-	printf("Finished loading world \"%s\"\n", name);
 	return true;
 }
 

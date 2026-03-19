@@ -109,8 +109,9 @@ Window::Window(std::string path, int argc, char* argv[]):
 		exit(0);
 	}
 
-	printf("Version: %s\nVendor: %s\n",
-		glGetString(GL_VERSION), glGetString(GL_VENDOR)
+	printf("Version: %s\nVendor: %s\nGLSL version: %s\nRenderer: %s\n",
+		glGetString(GL_VERSION), glGetString(GL_VENDOR),
+		glGetString(GL_SHADING_LANGUAGE_VERSION), glGetString(GL_RENDERER)
 	);
 
 	printf("Created the window\n");

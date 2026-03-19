@@ -86,7 +86,7 @@ function Camera:rotate()
 	self.cursorLock = false
 	
 	local deltaAngle = aeCamera.mouseDelta()
-	self.orientation.x = (self.orientation.x - deltaAngle.x * self.sensitivity) % 360.0
+	self.orientation.x = (self.orientation.x + deltaAngle.x * self.sensitivity) % 360.0
 	self.orientation.y = aeMath.clamp(
 		self.orientation.y - deltaAngle.y * self.sensitivity, -80, 80
 	)

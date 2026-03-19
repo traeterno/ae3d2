@@ -18,6 +18,7 @@ end
 
 global function Update()
 	if aeWindow.keyJustPressed("F1") then
+		aeCamera.clearCache()
 		aeWindow.loadUI("mainMenu")
 	end
 	txt.ts.angle.roll = txt.ts.angle.roll + 90 * aeWindow.dt()

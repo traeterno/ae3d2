@@ -24,6 +24,19 @@ function Vec3.new(x: number, y: number, z: number): Vec3
 	return self
 end
 
+function Vec3:lengthSquared(): number
+	return math.pow(self.x, 2) + math.pow(self.y, 2) + math.pow(self.z, 2)
+end
+
+function Vec3:length(): number
+	return math.sqrt(self:lengthSquared())
+end
+
+function Vec3:normalize(): Vec3
+	local l = 1 / self:length()
+	return Vec3.new(self.x * l, self.y * l, self.z * l)
+end
+
 local record Vec4
 	x: number
 	y: number
@@ -90,6 +103,21 @@ local function RotationLerp(a: number, b: number, t: number): number
 	return a + angle * t
 end
 
+local function HSV2RGB(h: number, s: number, v: number): Vec3
+	local c = s * v
+	local x = c * (1 - math.abs((h / 60) % 2 - 1))
+	local m = v - c
+
+	local clr = Vec3.new
+
+	if h < 60 then return clr(c + m, x + m, m)
+	elseif h < 120 then return clr(x + m, c + m, m)
+	elseif h < 180 then return clr(m, c + m, x + m)
+	elseif h < 240 then return clr(m, x + m, c + m)
+	elseif h < 300 then return clr(x + m, m, c + m)
+	else return clr(c + m, m, x + m) end
+end
+
 return {
 	Vec2 = Vec2,
 	Vec3 = Vec3,
@@ -99,5 +127,6 @@ return {
 	clamp = Clamp,
 	lerp = Lerp,
 	cycle = Cycle,
-	rotationLerp = RotationLerp
+	rotationLerp = RotationLerp,
+	hsv2rgb = HSV2RGB
 }

@@ -23,15 +23,15 @@ global function Init()
 
 	cam = Camera.new()
 	cam.distance = 2.5
-	cam.orientation.y = -45
-	cam.orientation.x = 90
+	cam.orientation.y = -15
+	cam.orientation.x = 180
 	cam:apply()
 
 	ts = aeMath.Transform.new()
-	ts.angle.yaw = 90
 	ts.pos.y = 0.25
-	ts.pos.x = 0.55
+	ts.pos.z = 0.55
 	cam:follow(ts.pos, camHeight)
+	aeCamera.mouseDelta()
 end
 
 global function Update()
@@ -52,8 +52,6 @@ global function Update()
 end
 
 global function Draw()
-	-- aeCamera.shaderUse("mesh")
-	-- aeCamera.shaderVec3("camera", cam.direction)
 	aeEntity.draw(ts)
 	-- aeEntity.drawSkeleton(ts)
 end
@@ -62,8 +60,8 @@ function getInput(): aeMath.Vec3
 	local forward = 0 ; local right = 0 ; local up = 0
 	if aeWindow.keyPressed("W") then forward = forward + 1 end
 	if aeWindow.keyPressed("S") then forward = forward - 1 end
-	if aeWindow.keyPressed("D") then right = right + 1 end
-	if aeWindow.keyPressed("A") then right = right - 1 end
+	if aeWindow.keyPressed("A") then right = right + 1 end
+	if aeWindow.keyPressed("D") then right = right - 1 end
 	if aeWindow.keyPressed("Space") then up = up + 1 end
 	if aeWindow.keyPressed("LShift") then up = up - 1 end
 	return aeMath.Vec3.new(right, up, forward)
