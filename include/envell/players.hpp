@@ -1,28 +1,17 @@
 #ifndef aePlayers
 #define aePlayers
 
-#include <ae/sync.hpp>
-#include <ae/network.hpp>
+#include <ae/socket.hpp>
 #include <chrono>
-
-#if defined(__WIN32__) or defined(_WIN32)
-
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <winsock2.h>
-
-#endif
 
 namespace envell::players
 {
 
-void main(ae::sync::Socket s);
+void main(ae::socket::Socket s);
 
 struct Player
 {
-	ae::net::TcpSocket tcp;
+	ae::net::TcpStream tcp;
 };
 
 struct State

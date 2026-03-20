@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <ae/window.hpp>
 #include <ae/global.hpp>
-#include <ae/network.hpp>
+#include <ae/socket.hpp>
 #include <nlohmann/json.hpp>
 
 using namespace ae;
@@ -36,14 +36,14 @@ UI* Window::getUI() { return &this->ui; }
 GLFWwindow* Window::getGLFW() { return this->window; }
 glm::vec2 Window::getBaseSize() { return this->uiSize; }
 Camera* Window::getCamera() { return &this->cam; }
-net::TcpSocket* Window::getTCP() { return &this->tcp; }
+net::TcpStream* Window::getTCP() { return &this->tcp; }
 
 Window::~Window()
 {
 	printf("Closing the window\n");
 	if (this->window != nullptr) glfwDestroyWindow(this->window);
 	glfwTerminate();
-	ae::net::shutdown();
+	ae::socket::shutdown();
 }
 
 Window::Window(std::string path, int argc, char* argv[]):
@@ -120,7 +120,7 @@ Window::Window(std::string path, int argc, char* argv[]):
 
 	printf("Created the window\n");
 	glViewport(0, 0, width, height);
-	ae::net::init();
+	ae::socket::init();
 	if (!this->cam.init())
 	{
 		printf("Failed to create the camera\n");
@@ -140,7 +140,6 @@ Window::Window(std::string path, int argc, char* argv[]):
 void Window::close()
 {
 	glfwSetWindowShouldClose(this->window, true);
-	ae::net::shutdown();
 }
 
 bool Window::isOpen()

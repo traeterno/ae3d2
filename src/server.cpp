@@ -1,18 +1,17 @@
-#include <ae/sync.hpp>
+#include <ae/socket.hpp>
 #include <ae/global.hpp>
 #include <nlohmann/json.hpp>
 
 #include <ctime>
 #include <thread>
 
-#include <ae/network.hpp>
 #include <envell/players.hpp>
 #include <envell/config.hpp>
 
 int main(int argc, char* argv[])
 {
 	srand(time(0));
-	ae::net::init();
+	ae::socket::init();
 	auto cfg = envell::cfg::loadConfig();
 	if (cfg.empty())
 	{
@@ -53,7 +52,7 @@ int main(int argc, char* argv[])
 	}
 
 	playersThread.join();
-	ae::net::shutdown();
+	ae::socket::shutdown();
 	delete[] playersSocket;
 	return 0;
 }

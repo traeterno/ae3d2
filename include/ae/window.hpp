@@ -8,7 +8,7 @@
 #include <ae/types.hpp>
 #include <ae/camera.hpp>
 #include <ae/world.hpp>
-#include <ae/network.hpp>
+#include <ae/socket.hpp>
 #include <chrono>
 
 using hrc = std::chrono::high_resolution_clock;
@@ -39,7 +39,7 @@ public:
 	glm::vec2 getBaseSize();
 	Camera* getCamera();
 	world::World* getWorld();
-	net::TcpSocket* getTCP();
+	net::TcpStream* getTCP();
 	KeyEvent key;
 	glm::vec2 scroll;
 private:
@@ -50,7 +50,7 @@ private:
 	Camera cam;
 	UI ui;
 	world::World world;
-	net::TcpSocket tcp;
+	net::TcpStream tcp;
 };
 
 }

@@ -4,9 +4,9 @@
 #include <thread>
 
 void setup(json data, envell::players::State* s);
-void handleMessage(envell::players::State* state, ae::sync::Socket s);
+void handleMessage(envell::players::State* state, ae::socket::Socket s);
 
-void envell::players::main(ae::sync::Socket mainFD)
+void envell::players::main(ae::socket::Socket mainFD)
 {
 	printf("Starting PlayersMain (PM)\n");
 
@@ -15,16 +15,17 @@ void envell::players::main(ae::sync::Socket mainFD)
 	state.sockets = nullptr;
 
 	printf("PM: Waiting for 'setup' message...\n");
-	ae::sync::setBlocking(mainFD, true);
+	ae::socket::setBlocking(mainFD, true);
 	setup:
 	{
 		auto msg = ae::sync::recv(mainFD);
 		if (msg["setup"].empty()) goto setup;
 		setup(msg["setup"], &state);
 	}
-	ae::sync::setBlocking(mainFD, false);
+	ae::socket::setBlocking(mainFD, false);
 
-	ae::net::TcpListener listener(state.port);
+	ae::net::TcpListener listener;
+	listener.bind(state.port);
 
 	bool running = true;
 	while (running)
@@ -34,7 +35,7 @@ void envell::players::main(ae::sync::Socket mainFD)
 	}
 }
 
-void handleMessage(envell::players::State* state, ae::sync::Socket s)
+void handleMessage(envell::players::State* state, ae::socket::Socket s)
 {
 	auto msg = ae::sync::recv(s);
 	if (!msg["setup"].empty())
