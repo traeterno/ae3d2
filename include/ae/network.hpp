@@ -19,6 +19,7 @@ struct Packet
 class TcpListener
 {
 public:
+	TcpListener();
 	TcpListener(u16 port);
 	~TcpListener();
 	TcpSocket accept();
@@ -33,7 +34,7 @@ public:
 	TcpSocket();
 	TcpSocket(std::string ip, u16 port);
 	~TcpSocket();
-	void connect(std::string ip, u16 port);
+	bool connect(std::string ip, u16 port);
 	void disconnect();
 	void send(Packet p);
 	Packet recv();

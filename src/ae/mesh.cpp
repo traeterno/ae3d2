@@ -3,6 +3,7 @@
 #include <ae/global.hpp>
 #include <ae/gltf.hpp>
 
+#include <cstring>
 #include <glad/glad.h>
 
 ae::mesh::Mesh::Mesh(ae::Camera* camera)

@@ -21,6 +21,12 @@ Packet::Packet(std::string msg)
 	memcpy(this->buf, msg.c_str(), this->len);
 }
 
+TcpListener::TcpListener()
+{
+	this->win32 = 0;
+	this->unix = 0;
+}
+
 TcpListener::TcpListener(u16 port)
 {
 	printf("Creating WinSocket\n");
@@ -69,7 +75,11 @@ TcpSocket TcpListener::accept()
 	return s;
 }
 
-TcpSocket::TcpSocket() { this->init(); }
+TcpSocket::TcpSocket()
+{
+	this->unix = 0;
+	this->win32 = 0;
+}
 
 TcpSocket::TcpSocket(std::string ip, u16 port)
 {
@@ -79,15 +89,17 @@ TcpSocket::TcpSocket(std::string ip, u16 port)
 
 TcpSocket::~TcpSocket()
 {
-	if (this->win32)
+	if (this->win32 != 0)
 	{
 		closesocket(this->win32);
 		this->win32 = 0;
 	}
 }
 
-void TcpSocket::connect(std::string ip, u16 port)
+bool TcpSocket::connect(std::string ip, u16 port)
 {
+	if (this->win32 == 0) { this->init(); }
+
 	SOCKADDR_IN addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
@@ -101,8 +113,10 @@ void TcpSocket::connect(std::string ip, u16 port)
 		printf("Failed to connect to (%s:%i): %i\n",
 			ip.c_str(), port, WSAGetLastError()
 		);
+		return false;
 	}
 	printf("Connected to (%s:%i)\n", ip.c_str(), port);
+	return true;
 }
 
 void TcpSocket::disconnect()

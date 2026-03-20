@@ -2,8 +2,7 @@
 #include <ae/types.hpp>
 
 #include <cstdarg>
-#include <json/json.h>
-#include <json/value.h>
+#include <nlohmann/json.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glfw/glfw3.h>
 
@@ -19,21 +18,18 @@ std::string ae::fs::readText(std::string path)
 	fseek(f, 0, SEEK_END);
 	auto len = ftell(f);
 	fseek(f, 0, SEEK_SET);
-	char* buf = (char*)malloc(len);
+	char* buf = (char*)malloc(len + 1);
 	fread(buf, 1, len, f);
+	buf[len] = 0;
 	fclose(f);
-	return std::string(buf, len);
+	return std::string(buf);
 }
 
-Json::Value ae::fs::readJSON(std::string path)
+json ae::fs::readJSON(std::string path)
 {
 	auto src = readText(path);
-	Json::Value root;
-	Json::CharReaderBuilder().newCharReader()->parse(
-		src.begin().base(), src.end().base(),
-		&root, nullptr
-	);
-	return root;
+	if (src.empty()) src = "{}";
+	return json::parse(src);
 }
 
 std::tuple<ae::usize, ae::u8*> ae::fs::readBinary(std::string path)

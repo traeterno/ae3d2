@@ -3,6 +3,8 @@
 #include <ae/global.hpp>
 #include <ae/camera.hpp>
 
+#include <nlohmann/json.hpp>
+
 using namespace ae::text;
 
 Font::Font(const char* id, Texture t)
@@ -18,21 +20,16 @@ Font::Font(const char* id, Texture t)
 
 	this->texSize = { t.width, t.height };
 
-	this->height = f["lineHeight"].asFloat();
+	this->height = f["lineHeight"];
 	this->glyphs.clear();
 
 	for (auto c: f["glyphs"])
 	{
 		Glyph g;
-		g.rect = glm::vec4(
-			c["x"].asFloat(), c["y"].asFloat(),
-			c["w"].asFloat(), c["h"].asFloat()
-		);
-		g.offset = glm::vec2(
-			c["ox"].asFloat(), c["oy"].asFloat()
-		);
-		g.advance = c["advance"].asFloat();
-		this->glyphs.insert({c["id"].asUInt(), g});
+		g.rect = glm::vec4(c["x"], c["y"], c["w"], c["h"]);
+		g.offset = glm::vec2(c["ox"], c["oy"]);
+		g.advance = c["advance"];
+		this->glyphs.insert({ c["id"], g });
 	}
 }
 

@@ -3,8 +3,10 @@
 
 #include "ae/types.hpp"
 #include <string>
-#include <json/value.h>
+#include <nlohmann/json_fwd.hpp>
 #include <glm/fwd.hpp>
+
+using nlohmann::json;
 
 extern "C"
 {
@@ -14,7 +16,7 @@ extern "C"
 namespace ae::fs
 {
 	std::string readText(std::string path);
-	Json::Value readJSON(std::string path);
+	json readJSON(std::string path);
 	std::tuple<usize, u8*> readBinary(std::string path);
 }
 

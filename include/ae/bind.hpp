@@ -17,6 +17,7 @@ namespace ae::bind
 	void camera(lua_State* script);
 	void world(lua_State* script);
 	void entity(lua_State* script);
+	void network(lua_State* script);
 }
 
 #endif

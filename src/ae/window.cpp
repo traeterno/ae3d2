@@ -3,6 +3,7 @@
 #include <ae/window.hpp>
 #include <ae/global.hpp>
 #include <ae/network.hpp>
+#include <nlohmann/json.hpp>
 
 using namespace ae;
 
@@ -35,12 +36,14 @@ UI* Window::getUI() { return &this->ui; }
 GLFWwindow* Window::getGLFW() { return this->window; }
 glm::vec2 Window::getBaseSize() { return this->uiSize; }
 Camera* Window::getCamera() { return &this->cam; }
+net::TcpSocket* Window::getTCP() { return &this->tcp; }
 
 Window::~Window()
 {
 	printf("Closing the window\n");
 	if (this->window != nullptr) glfwDestroyWindow(this->window);
 	glfwTerminate();
+	ae::net::shutdown();
 }
 
 Window::Window(std::string path, int argc, char* argv[]):
@@ -62,12 +65,12 @@ Window::Window(std::string path, int argc, char* argv[]):
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
 	this->uiSize = glm::vec2(
-		root["main"]["uiSize"][0].asFloat(),
-		root["main"]["size"][1].asFloat()
+		root["main"]["uiSize"][0],
+		root["main"]["size"][1]
 	);
 
 	int width, height;
-	if (root["main"]["fullscreen"].asBool())
+	if (root["main"]["fullscreen"])
 	{
 		auto monitor = glfwGetPrimaryMonitor();
 		auto vm = glfwGetVideoMode(monitor);
@@ -81,12 +84,13 @@ Window::Window(std::string path, int argc, char* argv[]):
 	}
 	else
 	{
-		width = root["main"]["size"][0].asInt();
-		height = root["main"]["size"][1].asInt();
+		width = root["main"]["size"][0];
+		height = root["main"]["size"][1];
 	}
 	
+	std::string title = root["main"]["title"];
 	this->window = glfwCreateWindow(
-		width, height, root["main"]["title"].asCString(),
+		width, height, title.c_str(),
 		nullptr, nullptr
 	);
 
@@ -122,8 +126,9 @@ Window::Window(std::string path, int argc, char* argv[]):
 		printf("Failed to create the camera\n");
 		exit(0);
 	}
-	this->cam.setFont(root["main"]["font"].asCString());
-	if (!this->ui.load(root["main"]["ui"].asCString()))
+	std::string font = root["main"]["font"];
+	this->cam.setFont(font.c_str());
+	if (!this->ui.load(root["main"]["ui"]))
 	{
 		printf("Can't load the UI; Stopping the engine\n");
 		exit(0);

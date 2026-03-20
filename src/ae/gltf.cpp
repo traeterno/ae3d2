@@ -1,5 +1,6 @@
 #include <ae/gltf.hpp>
 #include <ae/global.hpp>
+#include <nlohmann/json.hpp>
 
 using namespace ae::gltf;
 
@@ -18,13 +19,14 @@ GLTF* ae::gltf::load(const char* id)
 
 	for (auto x: src["buffers"])
 	{
-		auto uri = ae::str::format("res/meshes/%s", x["uri"].asCString());
-		auto len = x["byteLength"].asUInt();
+		std::string file = x["uri"];
+		auto uri = ae::str::format("res/meshes/%s", file.c_str());
+		u32 len = x["byteLength"];
 		auto [length, data] = ae::fs::readBinary(uri);
 		if (len != length)
 		{
 			printf("WARNING: GLTF \"%s\": Lengths are not the same(%i|%u)\n",
-				x["uri"].asCString(), len, length
+				file.c_str(), len, length
 			);
 		}
 		f->buffers.push_back({
@@ -36,31 +38,31 @@ GLTF* ae::gltf::load(const char* id)
 	for (auto x: src["bufferViews"])
 	{
 		f->bufferViews.push_back({
-			.buffer = (u8)x["buffer"].asUInt(),
-			.byteOffset = x["byteOffset"].asUInt(),
-			.byteLength = x["byteLength"].asUInt(),
-			.target = (u16)x["target"].asUInt()
+			.buffer = x["buffer"],
+			.byteOffset = x["byteOffset"],
+			.byteLength = x["byteLength"],
+			.target = u16(x["target"].is_number() ? (u16)x["target"] : 0)
 		});
 	}
 
 	for (auto x: src["accessors"])
 	{
 		f->accessors.push_back({
-			.bufferView = (u16)x["bufferView"].asUInt(),
-			.componentType = (u16)x["componentType"].asUInt(),
-			.count = x["count"].asUInt(),
-			.type = x["type"].asString()
+			.bufferView = x["bufferView"],
+			.componentType = x["componentType"],
+			.count = x["count"],
+			.type = x["type"]
 		});
 	}
 
-	f->scene = src["scene"].asUInt();
+	f->scene = src["scene"];
 
 	for (auto x: src["scenes"])
 	{
 		Scene s;
 		for (auto y: x["nodes"])
 		{
-			s.nodes.push_back(y.asUInt());
+			s.nodes.push_back(y);
 		}
 		f->scenes.push_back(s);
 	}
@@ -71,38 +73,31 @@ GLTF* ae::gltf::load(const char* id)
 			.children = {},
 			.mesh = U8_MAX,
 			.skin = U8_MAX,
-			.name = x["name"].asString(),
+			.name = x["name"],
 			.rotation = glm::quat(),
 			.translation = glm::vec3(),
 			.scale = glm::vec3()
 		};
-		if (!x["mesh"].isNull()) n.mesh = x["mesh"].asUInt();
-		if (!x["skin"].isNull()) n.skin = x["skin"].asUInt();
-		if (x["rotation"].isArray())
+		if (!x["mesh"].is_null()) n.mesh = x["mesh"];
+		if (!x["skin"].is_null()) n.skin = x["skin"];
+		if (x["rotation"].is_array())
 		{
 			auto r = x["rotation"];
-			n.rotation = glm::quat(
-				r[3].asFloat(), r[0].asFloat(),
-				r[1].asFloat(), r[2].asFloat()
-			);
+			n.rotation = glm::quat(r[3], r[0], r[1], r[2]);
 		}
-		if (x["translation"].isArray())
+		if (x["translation"].is_array())
 		{
 			auto t = x["translation"];
-			n.translation = glm::vec3(
-				t[0].asFloat(), t[1].asFloat(), t[2].asFloat()
-			);
+			n.translation = glm::vec3(t[0], t[1], t[2]);
 		}
-		if (x["scale"].isArray())
+		if (x["scale"].is_array())
 		{
 			auto s = x["scale"];
-			n.scale = glm::vec3(
-				s[0].asFloat(), s[1].asFloat(), s[2].asFloat()
-			);
+			n.scale = glm::vec3(s[0], s[1], s[2]);
 		}
 		for (auto y: x["children"])
 		{
-			n.children.push_back(y.asUInt());
+			n.children.push_back(y);
 		}
 		f->nodes.push_back(n);
 	}
@@ -112,61 +107,61 @@ GLTF* ae::gltf::load(const char* id)
 		auto p = x["primitives"][0];
 		auto a = p["attributes"];
 		f->meshes.push_back({
-			.name = x["name"].asString(),
-			.vertices = (u16)a["POSITION"].asUInt(),
-			.normal = (u16)a["NORMAL"].asUInt(),
-			.texCoord = a["TEXCOORD_0"].isNull() ? U16_MAX : (u16)a["TEXCOORD_0"].asUInt(),
-			.joints = a["JOINTS_0"].isNull() ? U16_MAX : (u16)a["JOINTS_0"].asUInt(),
-			.weights = a["WEIGHTS_0"].isNull() ? U16_MAX : (u16)a["WEIGHTS_0"].asUInt(),
-			.indices = (u16)p["indices"].asUInt(),
-			.material = p["material"].isNull() ? U8_MAX : (u8)p["material"].asUInt()
+			.name = x["name"],
+			.vertices = a["POSITION"],
+			.normal = a["NORMAL"],
+			.texCoord = a["TEXCOORD_0"].is_null() ? U16_MAX : (u16)a["TEXCOORD_0"],
+			.joints = a["JOINTS_0"].is_null() ? U16_MAX : (u16)a["JOINTS_0"],
+			.weights = a["WEIGHTS_0"].is_null() ? U16_MAX : (u16)a["WEIGHTS_0"],
+			.indices = p["indices"],
+			.material = p["material"].is_null() ? U8_MAX : (u8)p["material"]
 		});
 	}
 
 	for (auto x: src["materials"])
 	{
 		f->materials.push_back({
-			.name = x["name"].asString(),
-			.texture = (u8)x["pbrMetallicRoughness"]
-				["baseColorTexture"]["index"].asUInt()
+			.name = x["name"],
+			.texture = x["pbrMetallicRoughness"]
+				["baseColorTexture"]["index"]
 		});
 	}
 
 	for (auto x: src["textures"])
 	{
 		f->textures.push_back({
-			.sampler = (u8)x["sampler"].asUInt(),
-			.source = (u8)x["source"].asUInt()
+			.sampler = x["sampler"],
+			.source = x["source"]
 		});
 	}
 
 	for (auto x: src["samplers"])
 	{
 		f->samplers.push_back({
-			.magFilter = (u16)x["magFilter"].asUInt(),
-			.minFilter = (u16)x["minFilter"].asUInt(),
-			.wrapS = (u16)x["wrapS"].asUInt(),
-			.wrapT = (u16)x["wrapT"].asUInt()
+			.magFilter = x["magFilter"],
+			.minFilter = x["minFilter"],
+			.wrapS = u16(x["wrapS"].is_number() ? (u16)x["wrapS"] : 0),
+			.wrapT = u16(x["wrapT"].is_number() ? (u16)x["wrapT"] : 0)
 		});
 	}
 
 	for (auto x: src["images"])
 	{
 		f->images.push_back({
-			.mimeType = x["mimeType"].asString(),
-			.name = x["name"].asString(),
-			.uri = x["uri"].asString()
+			.mimeType = x["mimeType"],
+			.name = x["name"],
+			.uri = x["uri"]
 		});
 	}
 
 	for (auto x: src["skins"])
 	{
 		std::vector<u16> joints;
-		for (auto y: x["joints"]) joints.push_back(y.asUInt());
+		for (auto y: x["joints"]) joints.push_back(y);
 		f->skins.push_back({
-			.inverseBindMatrices = (u8)x["inverseBindMatrices"].asUInt(),
+			.inverseBindMatrices = x["inverseBindMatrices"],
 			.joints = joints,
-			.name = x["name"].asString()
+			.name = x["name"]
 		});
 	}
 
@@ -178,35 +173,35 @@ GLTF* ae::gltf::load(const char* id)
 		{
 			using TP = Animation::Channel::TargetPath;
 			TP tp;
-			auto raw = c["target"]["path"].asString();
+			auto raw = c["target"]["path"];
 			if (raw == "translation") tp = TP::Translation;
 			if (raw == "rotation") tp = TP::Rotation;
 			if (raw == "scale") tp = TP::Scale;
 			channels.push_back({
-				.sampler = (u16)c["sampler"].asUInt(),
-				.targetNode = (u16)c["target"]["node"].asUInt(),
+				.sampler = c["sampler"],
+				.targetNode = c["target"]["node"],
 				.targetPath = tp
 			});
 		}
 		for (auto s: x["samplers"])
 		{
 			Interpolation ip;
-			auto raw = s["interpolation"].asString();
+			auto raw = s["interpolation"];
 			if (raw == "STEP") ip = Interpolation::Step;
 			if (raw == "LINEAR") ip = Interpolation::Linear;
 			if (raw == "CUBICSPLINE") ip = Interpolation::CubicSpline;
 			samplers.push_back({
-				.input = (u16)s["input"].asUInt(),
+				.input = s["input"],
 				.interpolation = ip,
-				.output = (u16)s["output"].asUInt()
+				.output = s["output"]
 			});
 		}
 		Animation a {
 			.channels = channels,
-			.duration = x["extras"]["duration"].asFloat(),
-			.name = x["name"].asString(),
+			.duration = x["extras"]["duration"],
+			.name = x["name"],
 			.samplers = samplers,
-			.repeat = x["extras"]["repeat"].asBool()
+			.repeat = x["extras"]["repeat"]
 		};
 		f->animations.push_back(a);
 	}

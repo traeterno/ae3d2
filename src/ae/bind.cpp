@@ -518,3 +518,26 @@ void ae::bind::entity(lua_State* script)
 	insertFunction(script, "stopAnimation", ae_entity_stopAnimation);
 	lua_setglobal(script, "aeEntity");
 }
+
+LUA(network_connectTCP)
+{
+	u16 port = lua_tointeger(script, -1); lua_pop(script, 1);
+	std::string ip = lua_tostring(script, -1); lua_pop(script, 1);
+	auto tcp = getWindow(script)->getTCP();
+	lua_pushboolean(script, tcp->connect(ip, port));
+	return 1;
+}
+
+LUA(network_disconnectTCP)
+{
+	getWindow(script)->getTCP()->disconnect();
+	return 0;
+}
+
+void ae::bind::network(lua_State* script)
+{
+	lua_createtable(script, 0, 1);
+	insertFunction(script, "connect", ae_network_connectTCP);
+	insertFunction(script, "disconnect", ae_network_disconnectTCP);
+	lua_setglobal(script, "aeNetwork");
+}

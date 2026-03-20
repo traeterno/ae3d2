@@ -1,26 +1,26 @@
 #ifndef aeSync
 #define aeSync
 
-#include <condition_variable>
-#include <queue>
-#include <optional>
+#include <ae/types.hpp>
+#include <nlohmann/json_fwd.hpp>
 
-namespace ae
+using nlohmann::json;
+
+namespace ae::sync
 {
 
-template<typename T>
-class Channel
-{
-public:
-	Channel() = default;
-	~Channel() = default;
-	void send(T msg);
-	std::optional<T> recv();
-private:
-	std::queue<T> line;
-	std::mutex m;
-	std::condition_variable cv;
-};
+#if defined(__WIN32__) or defined(_WIN32)
+typedef unsigned long long Socket;
+#else
+typedef ae::i32 Socket;
+#endif
+
+Socket* buildPair();
+
+void send(Socket s, json);
+json recv(Socket s);
+
+void setBlocking(ae::sync::Socket s, bool blocking);
 
 };
 

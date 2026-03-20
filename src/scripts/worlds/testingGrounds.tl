@@ -9,6 +9,8 @@ global function Init()
 	aeCamera.shaderInt("lightsCount", 1)
 	aeCamera.shaderVec3("lightDir[0]", aeMath.Vec3.new(0, -1, 0))
 	aeCamera.shaderVec3("lightClr[0]", aeMath.Vec3.new(1, 1, 1))
+
+	aeNetwork.connect("127.0.0.1", 26225)
 end
 
 global function Update()

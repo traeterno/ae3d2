@@ -50,5 +50,10 @@ global record aeEntity
 	stopAnimation: function(string)
 end
 
+global record aeNetwork
+	connect: function(string, integer): boolean
+	disconnect: function()
+end
+
 global _winptr: integer
 global _executor: string
