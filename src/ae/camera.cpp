@@ -114,9 +114,10 @@ bool Camera::init()
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
 	
-	glGenVertexArrays(1, &this->skeletonVAO);
-	this->bindVAO(this->skeletonVAO);
+	glGenVertexArrays(1, &this->shapeVAO);
+	this->bindVAO(this->shapeVAO);
 	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 	
 	this->bindVAO(0);
 	printf("Initialized camera\n");
@@ -215,7 +216,23 @@ void Camera::drawText(u32 id, usize len)
 }
 
 void Camera::bindMeshVAO() { this->bindVAO(this->meshVAO); }
-void Camera::bindSkeletonVAO() { this->bindVAO(this->skeletonVAO); }
+
+void Camera::drawShape(u32 vbo, u8 type, u32 count, glm::mat4 ts)
+{
+	this->shaderUse("shape");
+	this->bindVAO(this->shapeVAO);
+	this->shaderSetModel(ts);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexAttribPointer(
+		0, 3, GL_FLOAT, GL_FALSE,
+		7 * sizeof(f32), 0
+	);
+	glVertexAttribPointer(
+		1, 4, GL_FLOAT, GL_FALSE,
+		7 * sizeof(f32), (void*)(3 * sizeof(f32))
+	);
+	glDrawArrays(type, 0, count);
+}
 
 void Camera::setFont(const char* name)
 {

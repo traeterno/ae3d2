@@ -3,14 +3,17 @@
 #include <chrono>
 #include <thread>
 
-void setup(json data, envell::players::State* s);
+void setup(envell::players::State* s, json data);
 void handleMessage(envell::players::State* state, ae::socket::Socket s);
+void handlePlayer(envell::players::State* state, ae::u8 id, ae::socket::Status status);
 
 void envell::players::main(ae::socket::Socket mainFD)
 {
 	printf("Starting PlayersMain (PM)\n");
 
 	State state;
+	state.main = mainFD;
+	state.allowNewPlayers = true;
 	state.players = nullptr;
 
 	printf("PM: Waiting for 'setup' message...\n");
@@ -19,7 +22,7 @@ void envell::players::main(ae::socket::Socket mainFD)
 	{
 		auto msg = ae::sync::recv(mainFD);
 		if (msg["setup"].empty()) goto setup;
-		setup(msg["setup"], &state);
+		setup(&state, msg["setup"]);
 	}
 	ae::socket::setBlocking(mainFD, false);
 
@@ -61,16 +64,8 @@ void envell::players::main(ae::socket::Socket mainFD)
 			{
 				auto status = state.sockets.get(i);
 				if (status == ae::socket::None) continue;
-				auto p = &state.players[i];
-				if (status == ae::socket::Disconnected)
-				{
-					p->tcp.disconnect();
-					state.sockets.set(i, 0);
-					printf("PM: P%i disconnected.\n", i);
-					break;
-				}
-				auto packet = p->tcp.recv();
-				printf("Received %i bytes from P%i\n", packet.len, i);
+				handlePlayer(&state, i, status);
+				break;
 			}
 		}
 		std::this_thread::sleep_for(state.tickTime);
@@ -82,11 +77,11 @@ void handleMessage(envell::players::State* state, ae::socket::Socket s)
 	auto msg = ae::sync::recv(s);
 	if (!msg["setup"].empty())
 	{
-		setup(msg["setup"], state);
+		setup(state, msg["setup"]);
 	}
 }
 
-void setup(json data, envell::players::State* s)
+void setup(envell::players::State* s, json data)
 {
 	printf("PM: Setting up Session...\n");
 
@@ -102,10 +97,24 @@ void setup(json data, envell::players::State* s)
 
 ae::u8 envell::players::getEmptyID(State* s)
 {
-	// TODO add setting for state which disables new connections
+	if (!s->allowNewPlayers) return ae::u8max;
 	for (ae::u8 i = 0; i < s->playerLimit; i++)
 	{
 		if (!s->players[i].tcp.getPort()) return i;
 	}
-	return ae::U8_MAX;
+	return ae::u8max;
+}
+
+void handlePlayer(envell::players::State* state, ae::u8 id, ae::socket::Status status)
+{
+	auto p = &state->players[id];
+	if (status == ae::socket::Disconnected)
+	{
+		p->tcp.disconnect();
+		state->sockets.set(id, 0);
+		printf("PM: P%i disconnected.\n", id);
+		return;
+	}
+	auto packet = p->tcp.recv();
+	printf("Received %i bytes from P%i\n", packet.len, id);
 }

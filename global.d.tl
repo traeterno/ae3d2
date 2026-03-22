@@ -51,8 +51,9 @@ global record aeEntity
 end
 
 global record aeNetwork
-	connect: function(string, integer): boolean
+	connect: function(string, integer)
 	disconnect: function()
+	isReady: function(): boolean
 end
 
 global _winptr: integer

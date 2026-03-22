@@ -2,16 +2,17 @@
 #define aeWindow
 
 #include <string>
-#include <GLFW/glfw3.h>
 #include <ae/ui.hpp>
 #include <glm/glm.hpp>
 #include <ae/types.hpp>
 #include <ae/camera.hpp>
 #include <ae/world.hpp>
-#include <ae/socket.hpp>
+#include <ae/network.hpp>
 #include <chrono>
 
 using hrc = std::chrono::high_resolution_clock;
+
+struct GLFWwindow;
 
 namespace ae
 {
@@ -39,7 +40,7 @@ public:
 	glm::vec2 getBaseSize();
 	Camera* getCamera();
 	world::World* getWorld();
-	net::TcpStream* getTCP();
+	NetworkClient* getNC();
 	KeyEvent key;
 	glm::vec2 scroll;
 private:
@@ -50,7 +51,7 @@ private:
 	Camera cam;
 	UI ui;
 	world::World world;
-	net::TcpStream tcp;
+	NetworkClient net;
 };
 
 }

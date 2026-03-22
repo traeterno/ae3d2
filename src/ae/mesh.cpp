@@ -32,7 +32,7 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 		printf("Error: Node \"%s\" not found\n", id);
 		return;
 	}
-	if (node->mesh == U8_MAX)
+	if (node->mesh == u8max)
 	{
 		printf("Error: Node \"%s\" does not contain mesh\n", id);
 		return;
@@ -62,7 +62,7 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 	
 	glm::u8vec4* joints = nullptr;
 
-	if (m->joints != U16_MAX)
+	if (m->joints != u16max)
 	{
 		auto ja = &file->accessors[m->joints];
 		auto jbv = &file->bufferViews[ja->bufferView];
@@ -88,7 +88,7 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 		(*(glm::vec2*)&buf[i*9+7]) = uvs[i];
 	}
 
-	if (m->joints == U16_MAX) delete[] joints;
+	if (m->joints == u16max) delete[] joints;
 	
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferData(
@@ -106,13 +106,13 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 
 	this->indices = ia->count;
 
-	if (node->skin != U8_MAX)
+	if (node->skin != u8max)
 	{
 		this->sk = new Skeleton;
 		this->sk->load(file, node->skin);
 	}
 
-	if (m->material == U8_MAX) return;
+	if (m->material == u8max) return;
 
 	auto mat = &file->materials[m->material];
 	printf("Using material \"%s\"\n", mat->name.c_str());
@@ -219,7 +219,7 @@ ae::mesh::Bone::Bone()
 	this->angle = glm::mat3(1.0);
 	this->translation = glm::mat4(1.0);
 	this->length = 1.0;
-	this->id = U16_MAX;
+	this->id = u16max;
 }
 
 ae::mesh::Bone::Bone(gltf::GLTF* file, u16 nodeID, u16* id)
@@ -260,10 +260,12 @@ void ae::mesh::Bone::update(glm::mat4* ts, glm::mat3* f, glm::mat4 pts)
 	for (auto& b: this->children) { b.update(ts, f, t); }
 }
 
-void ae::mesh::Bone::render(glm::mat4* ts, glm::vec3* pts, u16* counter)
+void ae::mesh::Bone::render(glm::mat4* ts, f32* pts, u16* counter)
 {
-	pts[*counter * 2 + 0] = ts[*counter] * glm::vec4(0, 0, 0, 1);
-	pts[*counter * 2 + 1] = ts[*counter] * glm::vec4(0, this->length, 0, 1);
+	*(glm::vec3*)(&pts[*counter * 14 + 00]) = ts[*counter] * glm::vec4(0, 0, 0, 1);
+	*(glm::vec4*)(&pts[*counter * 14 + 03]) = glm::vec4(1, 0, 0, 1);
+	*(glm::vec3*)(&pts[*counter * 14 + 07]) = ts[*counter] * glm::vec4(0, this->length, 0, 1);
+	*(glm::vec4*)(&pts[*counter * 14 + 10]) = glm::vec4(0, 0, 1, 1);
 	(*counter)++;
 	for (auto& b: this->children) b.render(ts, pts, counter);
 }
@@ -405,21 +407,15 @@ void ae::mesh::Skeleton::update(f32 dt, ae::Camera* cam)
 void ae::mesh::Skeleton::render(ae::Camera* cam, glm::mat4 ts)
 {
 	u16 counter = 0;
-	auto pts = new glm::vec3[this->bonesCount * 2];
+	auto pts = new f32[this->bonesCount * 14];
 	for (auto& b: this->bones) b.render(this->ts, pts, &counter);
-	cam->shaderUse("skeleton");
-	cam->bindSkeletonVAO();
-	cam->shaderSetModel(ts);
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferData(
-		GL_ARRAY_BUFFER, this->bonesCount * 2 * sizeof(glm::vec3),
+		GL_ARRAY_BUFFER, this->bonesCount * 56,
 		pts, GL_STATIC_DRAW
 	);
-	glVertexAttribPointer(
-		0, 3, GL_FLOAT, GL_FALSE, 12, 0
-	);
 	glDepthFunc(GL_ALWAYS);
-	glDrawArrays(GL_LINES, 0, this->bonesCount * 2);
+	cam->drawShape(this->vbo, GL_LINES, this->bonesCount * 2, ts);
 	glDepthFunc(GL_LESS);
 	delete[] pts;
 }

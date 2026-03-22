@@ -71,8 +71,8 @@ GLTF* ae::gltf::load(const char* id)
 	{
 		Node n {
 			.children = {},
-			.mesh = U8_MAX,
-			.skin = U8_MAX,
+			.mesh = u8max,
+			.skin = u8max,
 			.name = x["name"],
 			.rotation = glm::quat(),
 			.translation = glm::vec3(),
@@ -110,11 +110,11 @@ GLTF* ae::gltf::load(const char* id)
 			.name = x["name"],
 			.vertices = a["POSITION"],
 			.normal = a["NORMAL"],
-			.texCoord = a["TEXCOORD_0"].is_null() ? U16_MAX : (u16)a["TEXCOORD_0"],
-			.joints = a["JOINTS_0"].is_null() ? U16_MAX : (u16)a["JOINTS_0"],
-			.weights = a["WEIGHTS_0"].is_null() ? U16_MAX : (u16)a["WEIGHTS_0"],
+			.texCoord = a["TEXCOORD_0"].is_null() ? u16max : (u16)a["TEXCOORD_0"],
+			.joints = a["JOINTS_0"].is_null() ? u16max : (u16)a["JOINTS_0"],
+			.weights = a["WEIGHTS_0"].is_null() ? u16max : (u16)a["WEIGHTS_0"],
 			.indices = p["indices"],
-			.material = p["material"].is_null() ? U8_MAX : (u8)p["material"]
+			.material = p["material"].is_null() ? u8max : (u8)p["material"]
 		});
 	}
 

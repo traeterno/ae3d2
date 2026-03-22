@@ -22,7 +22,7 @@ bin/server$(ext): obj/server.o \
 bin/ae3d$(ext): obj/main.o \
 		obj/ae/window.o obj/ae/global.o obj/ae/socket.o \
 		obj/ae/ui.o obj/ae/bind.o obj/ae/camera.o obj/ae/font.o obj/ae/mesh.o \
-		obj/ae/world.o obj/ae/gltf.o
+		obj/ae/world.o obj/ae/gltf.o obj/ae/network.o
 	g++ $^ obj/etc/glad.o -o bin/ae3d$(ext) -lglfw3 -llua $(libs)
 
 obj/main.o: src/main.cpp

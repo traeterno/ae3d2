@@ -301,44 +301,49 @@ ae::net::TcpStream::~TcpStream()
 {
 	if (this->raw != 0 && this->port == 0)
 	{
-		printf("Destroying TcpStream #%llu\n", this->raw);
 		this->disconnect();
 		closesocket(this->raw);
 	}
 }
 
-bool ae::net::TcpStream::connect(std::string ip, u16 port)
+void ae::net::TcpStream::connect(std::string ip, u16 port)
 {
+	if (this->port != 0) { this->disconnect(); }
 	if (this->raw == 0) { this->init(); }
 	sockaddr_in addr;
 	memset(&addr, 0, sizeof(sockaddr_in));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
-	printf("Connecting %llu to %s:%i\n", this->raw, ip.c_str(), port);
 	
 	if (::connect(this->raw, (sockaddr*)&addr, sizeof(sockaddr_in)) == SOCKET_ERROR)
 	{
-		printf("Failed to connect: %i\n", socket::getError());
-		return false;
+		printf("Failed to connect to %s%i: %i\n", ip.c_str(), port, socket::getError());
+		return;
 	}
-	printf("Connected\n");
-	return true;
+
+	this->ip.resize(INET_ADDRSTRLEN, 'x');
+	inet_ntop(
+		AF_INET, &addr,
+		(char*)this->ip.c_str(), INET_ADDRSTRLEN
+	);
+	this->port = addr.sin_port;
+
+	return;
 }
 
 void ae::net::TcpStream::disconnect()
 {
-	if (this->ip.empty()) return;
-	::shutdown(this->raw, SD_BOTH);
+	if (this->port == 0) return;
+	closesocket(this->raw);
+	this->raw = 0;
 	this->ip.clear();
 	this->port = 0;
-	printf("TcpStream %llu disconnected\n", this->raw);
 }
 
 void ae::net::TcpStream::send(Packet p)
 {
-	auto size = ::send(this->raw, (i8*)p.buf, p.len, 0);
-	printf("Sent %i/%i bytes\n", size, p.len);
+	::send(this->raw, (i8*)p.buf, p.len, 0);
 }
 
 ae::net::Packet ae::net::TcpStream::recv()
@@ -346,7 +351,6 @@ ae::net::Packet ae::net::TcpStream::recv()
 	Packet out;
 	auto buf = new char[8*1024];
 	auto size = ::recv(this->raw, buf, 8*1024, 0);
-	printf("%i\n", size);
 	out.len = size;
 	out.buf = new u8[size];
 	memcpy(out.buf, buf, size);

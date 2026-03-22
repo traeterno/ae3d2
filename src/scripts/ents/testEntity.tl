@@ -5,6 +5,8 @@ local cam: Camera
 local ts: aeMath.Transform
 local distance: number
 local camHeight: number
+local ready: boolean
+local active: boolean
 
 local getInput: function(): aeMath.Vec3
 
@@ -16,15 +18,16 @@ global function Init()
 
 	distance = 2.5
 	camHeight = 1.25
+	ready = false
+	active = false
 
 	aeEntity.setAnimation("Summon")
-	-- aeEntity.setAnimation("IdleUpper")
 	aeEntity.setAnimation("IdleLower")
 
 	cam = Camera.new()
 	cam.distance = 2.5
-	cam.orientation.y = -15
-	cam.orientation.x = 180
+	cam.orientation.y = -30
+	cam.orientation.x = 45
 	cam:apply()
 
 	ts = aeMath.Transform.new()
@@ -35,6 +38,23 @@ global function Init()
 end
 
 global function Update()
+	if not ready then
+		if aeNetwork.isReady() then
+			ready = true
+			aeEntity.stopAnimation("Summon")
+			aeEntity.setAnimation("IdleUpper")
+			cam.orientation.x = 180
+			cam:apply()
+		end
+		return
+	end
+
+	if aeWindow.keyJustPressed("Tab") then
+		active = not active
+		if active then aeCamera.mouseDelta() end
+	end
+	if not active then return end
+
 	local dt = aeWindow.dt()
 	cam:rotate()
 

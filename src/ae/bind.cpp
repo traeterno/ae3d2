@@ -7,6 +7,7 @@
 #include <ae/types.hpp>
 #include <ae/global.hpp>
 #include <ae/font.hpp>
+#include <GLFW/glfw3.h>
 
 using namespace ae;
 
@@ -519,25 +520,32 @@ void ae::bind::entity(lua_State* script)
 	lua_setglobal(script, "aeEntity");
 }
 
-LUA(network_connectTCP)
+LUA(network_connect)
 {
 	u16 port = lua_tointeger(script, -1); lua_pop(script, 1);
 	std::string ip = lua_tostring(script, -1); lua_pop(script, 1);
-	auto tcp = getWindow(script)->getTCP();
-	lua_pushboolean(script, tcp->connect(ip, port));
-	return 1;
+	getWindow(script)->getNC()->connect(ip, port);
+	return 0;
 }
 
-LUA(network_disconnectTCP)
+LUA(network_disconnect)
 {
-	getWindow(script)->getTCP()->disconnect();
+	getWindow(script)->getNC()->disconnect();
 	return 0;
+}
+
+LUA(network_isReady)
+{
+	auto status = getWindow(script)->getNC()->isReady();
+	lua_pushboolean(script, status);
+	return 1;
 }
 
 void ae::bind::network(lua_State* script)
 {
 	lua_createtable(script, 0, 1);
-	insertFunction(script, "connect", ae_network_connectTCP);
-	insertFunction(script, "disconnect", ae_network_disconnectTCP);
+	insertFunction(script, "connect", ae_network_connect);
+	insertFunction(script, "disconnect", ae_network_disconnect);
+	insertFunction(script, "isReady", ae_network_isReady);
 	lua_setglobal(script, "aeNetwork");
 }

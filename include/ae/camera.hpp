@@ -50,7 +50,7 @@ public:
 	void drawText(u32 id, usize len);
 
 	void bindMeshVAO();
-	void bindSkeletonVAO();
+	void drawShape(u32 vbo, u8 type, u32 count, glm::mat4 ts);
 
 	void shaderUse(const char* id);
 	void shaderMat3(const char* uniform, glm::mat3 value);
@@ -69,8 +69,7 @@ private:
 	Window* window;
 	Offscreen offscreen;
 	u32 currentShader, currentTexture, currentVAO;
-	u32 spriteVAO, textVAO, meshVAO, skeletonVAO;
-	// TODO replace skeletonVAO with shapeVAO
+	u32 spriteVAO, textVAO, meshVAO, shapeVAO;
 	std::string fontName;
 	glm::mat4 perspective, orthographic, currentProj;
 	glm::mat4 camView, currentView;

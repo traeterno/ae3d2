@@ -50,7 +50,7 @@ public:
 	void update(glm::mat4* ts, glm::mat3* f, glm::mat4 pts);
 	u16 getID();
 	f32 getLength();
-	void render(glm::mat4* ts, glm::vec3* pts, u16* counter);
+	void render(glm::mat4* ts, f32* pts, u16* counter);
 private:
 	u16 nodeID, id;
 	std::string name;

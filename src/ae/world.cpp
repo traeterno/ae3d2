@@ -148,6 +148,7 @@ Entity::Entity(ae::Window* win, const char* id, const char* path):
 	ae::bind::camera(this->state);
 	ae::bind::world(this->state);
 	ae::bind::entity(this->state);
+	ae::bind::network(this->state);
 	printf("Loading entity from \"%s\"\n", path);
 	std::string src = ae::fs::readText(ae::str::format(
 		"res/scripts/ents/%s.lua", path

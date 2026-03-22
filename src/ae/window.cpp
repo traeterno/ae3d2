@@ -36,7 +36,7 @@ UI* Window::getUI() { return &this->ui; }
 GLFWwindow* Window::getGLFW() { return this->window; }
 glm::vec2 Window::getBaseSize() { return this->uiSize; }
 Camera* Window::getCamera() { return &this->cam; }
-net::TcpStream* Window::getTCP() { return &this->tcp; }
+ae::NetworkClient* Window::getNC() { return &this->net; }
 
 Window::~Window()
 {
@@ -49,7 +49,8 @@ Window::~Window()
 Window::Window(std::string path, int argc, char* argv[]):
 	cam(Camera(this)),
 	ui(UI(this)),
-	world(world::World(this))
+	world(world::World(this)),
+	net(NetworkClient(this))
 {
 	auto root = ae::fs::readJSON(path);
 	if (root.empty()) { printf("The configuration file is empty"); exit(0); }

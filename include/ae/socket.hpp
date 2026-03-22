@@ -75,7 +75,7 @@ public:
 	TcpStream();
 	TcpStream(socket::Socket s, sockaddr_in addr);
 	~TcpStream();
-	bool connect(std::string ip, u16 port);
+	void connect(std::string ip, u16 port);
 	void disconnect();
 	void send(Packet p);
 	Packet recv();

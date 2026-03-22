@@ -17,19 +17,19 @@ typedef i32 isize;
 typedef float f32;
 typedef double f64;
 
-const u8 U8_MAX = 0xFF;
-const u16 U16_MAX = 0xFFFF;
-const u32 U32_MAX = 0xFFFFFFFF;
-const usize USIZE_MAX = 0xFFFFFFFF;
+const u8 u8max = 0xFF;
+const u16 u16max = 0xFFFF;
+const u32 u32max = 0xFFFFFFFF;
+const usize usizemax = 0xFFFFFFFF;
 
-const i8 I8_MAX = 0x7F;
-const i8 I8_MIN = 0x80;
-const i16 I16_MAX = 0x7FFF;
-const i16 I16_MIN = 0x8000;
-const i32 I32_MAX = 0x7FFFFFFF;
-const i32 I32_MIN = 0x80000000;
-const isize ISIZE_MAX = 0xFFFFFFFF;
-const isize ISIZE_MIN = 0x80000000;
+const i8 i8max = 0x7F;
+const i8 i8min = 0x80;
+const i16 i16max = 0x7FFF;
+const i16 i16min = 0x8000;
+const i32 i32max = 0x7FFFFFFF;
+const i32 i32min = 0x80000000;
+const isize isizemax = 0xFFFFFFFF;
+const isize isizemin = 0x80000000;
 
 };
 
