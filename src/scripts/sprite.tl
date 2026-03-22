@@ -83,9 +83,8 @@ function Sprite:draw()
 	aeCamera.shaderInt("tex", 0)
 	aeCamera.shaderVec4("rect", self.texRect)
 	aeCamera.shaderVec2("texSize", self.texSize)
-	aeCamera.setModelMatrix(self.ts)
 	aeCamera.shaderVec4("clr", self.color)
-	aeCamera.drawSprite()
+	aeCamera.drawSprite(self.ts)
 end
 
 return Sprite

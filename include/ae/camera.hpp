@@ -46,8 +46,8 @@ public:
 	gltf::GLTF* getGLTF(const char* id);
 	void unloadGLTF(const char* id);
 
-	void drawSprite();
-	void drawText(u32 id, usize len);
+	void drawSprite(glm::mat4 ts);
+	void drawText(u32 id, usize len, glm::mat3 rot, glm::mat4 ts);
 
 	void bindMeshVAO();
 	void drawShape(u32 vbo, u8 type, u32 count, glm::mat4 ts);

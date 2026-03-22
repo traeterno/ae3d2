@@ -196,13 +196,14 @@ void Camera::display()
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
-void Camera::drawSprite()
+void Camera::drawSprite(glm::mat4 ts)
 {
 	this->bindVAO(this->spriteVAO);
+	this->shaderSetModel(ts);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
-void Camera::drawText(u32 id, usize len)
+void Camera::drawText(u32 id, usize len, glm::mat3 rot, glm::mat4 ts)
 {
 	this->bindVAO(this->textVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, id);
@@ -212,6 +213,7 @@ void Camera::drawText(u32 id, usize len)
 	);
 	this->shaderUse("text");
 	this->textureUse(this->fontName.c_str());
+	this->shaderSetModel(ts);
 	glDrawArrays(GL_TRIANGLES, 0, len);
 }
 

@@ -1,12 +1,13 @@
 -- local aeMath = require("aeMath")
--- local Text = require("text")
+local Text = require("text")
 
--- global txt: Text
+global txt: Text
 
 global function Init()
-	aeWorld.load("mainMenu")
-	-- txt = Text.new()
-	-- txt:setString("Heroes of Envell")
+	-- aeWorld.load("mainMenu")
+
+	txt = Text.new()
+	txt:setString("Heroes of Envell")
 	-- txt.ts.origin = aeMath.Vec3.new(txt.bounds.x * 0.5, 0, 0)
 
 	-- aeWorld.load("testingGrounds")
@@ -27,5 +28,5 @@ global function Update()
 end
 
 global function Draw()
-	-- txt:draw()
+	txt:draw()
 end

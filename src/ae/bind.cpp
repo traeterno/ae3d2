@@ -88,11 +88,13 @@ glm::vec3 lua_vec3(lua_State* script)
 	lua_getfield(script, -1, "x");
 	lua_getfield(script, -2, "y");
 	lua_getfield(script, -3, "z");
-	return glm::vec3(
+	glm::vec3 xyz(
 		lua_tonumber(script, -3),
 		lua_tonumber(script, -2),
 		lua_tonumber(script, -1)
 	);
+	lua_pop(script, 4);
+	return xyz;
 }
 
 void vec3_lua(lua_State* script, glm::vec3 v)
@@ -132,12 +134,14 @@ glm::quat lua_quat(lua_State* script)
 	lua_getfield(script, -2, "pitch");
 	lua_getfield(script, -3, "roll");
 	lua_getfield(script, -4, "relative");
-	return ae::math::buildQuat(
+	auto q = ae::math::buildQuat(
 		lua_tonumber(script, -4),
 		lua_tonumber(script, -3),
 		lua_tonumber(script, -2),
 		lua_toboolean(script, -1)
 	);
+	lua_pop(script, 5);
+	return q;
 }
 
 void quat_lua(lua_State* script, glm::vec3 v, bool g)
@@ -153,17 +157,18 @@ std::pair<glm::mat3, glm::mat4> lua_ts(lua_State* script)
 {
 	lua_getfield(script, -1, "pos");
 	auto pos = lua_vec3(script);
-	lua_getfield(script, -5, "origin");
+	lua_getfield(script, -1, "origin");
 	auto origin = lua_vec3(script);
-	lua_getfield(script, -9, "scale");
+	lua_getfield(script, -1, "scale");
 	auto scale = lua_vec3(script);
-	lua_getfield(script, -13, "angle");
+	lua_getfield(script, -1, "angle");
 	auto angle = glm::mat3(lua_quat(script));
 	glm::mat4 ts;
 	ts = glm::translate(glm::mat4(1.0), -origin);
 	ts = glm::scale(glm::mat4(1.0), scale) * ts;
 	ts = glm::mat4(angle) * ts;
 	ts = glm::translate(glm::mat4(1.0), pos) * ts;
+	lua_pop(script, 1);
 	return {angle, ts};
 }
 
@@ -311,7 +316,8 @@ LUA(camera_shaderVec4)
 
 LUA(camera_drawSprite)
 {
-	getWindow(script)->getCamera()->drawSprite();
+	auto [rot, ts] = lua_ts(script);
+	getWindow(script)->getCamera()->drawSprite(ts);
 	return 0;
 }
 
@@ -348,10 +354,11 @@ LUA(camera_buildText)
 
 LUA(camera_drawText)
 {
+	auto [rot, ts] = lua_ts(script);
 	usize len = lua_tonumber(script, -1);
 	u32 id = lua_tonumber(script, -2);
 	auto cam = getWindow(script)->getCamera();
-	cam->drawText(id, len);
+	cam->drawText(id, len, rot, ts);
 	return 0;
 }
 
@@ -406,13 +413,6 @@ LUA(camera_unloadGLTF)
 {
 	auto id = lua_tostring(script, -1);
 	getWindow(script)->getCamera()->unloadGLTF(id);
-	return 0;
-}
-
-LUA(camera_setModelMatrix)
-{
-	auto [rot, ts] = lua_ts(script);
-	getWindow(script)->getCamera()->shaderSetModel(ts);
 	return 0;
 }
 

@@ -21,18 +21,18 @@ global record aeCamera
 	shaderVec2: function(string, aeMath.Vec2)
 	shaderVec3: function(string, aeMath.Vec3)
 	shaderVec4: function(string, aeMath.Vec4)
-	drawSprite: function()
+	drawSprite: function(aeMath.Transform)
 	clearCache: function()
 	createVBO: function(): integer
 	removeVBO: function(integer)
 	buildText: function(string, integer): integer, aeMath.Vec2
-	drawText: function(integer, integer)
+	drawText: function(integer, integer, aeMath.Transform)
 	mouseDelta: function(): aeMath.Vec2
 	buildView: function(table)
 	lookAt: function(table)
 	loadGLTF: function(string)
 	unloadGLTF: function(string)
-	setModelMatrix: function(aeMath.Transform)
+	-- setModelMatrix: function(aeMath.Transform)
 end
 
 -- TODO remove 'setModelMatrix'; pass transform as 'drawX' argument
