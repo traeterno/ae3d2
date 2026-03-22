@@ -4,6 +4,108 @@
 #include <thread>
 #include <nlohmann/json.hpp>
 
+#if defined(__WIN32__) or defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <winsock2.h>
+#include <afunix.h>
+#include <ws2tcpip.h>
+#endif
+
+#if defined(__WIN32__) or defined(_WIN32)
+ae::i32 ae::socket::getError() { return WSAGetLastError(); }
+#else
+// TODO Linux implementation
+#endif
+
+ae::socket::Poller::Poller()
+{
+	this->entries = nullptr;
+	this->count = 0;
+}
+
+ae::socket::Poller::~Poller()
+{
+	if (this->entries != nullptr)
+	{
+		delete[] this->entries;
+	}
+}
+
+void ae::socket::Poller::setCount(u16 count)
+{
+	if (count == 0)
+	{
+		delete[] this->entries;
+		this->count = 0;
+		return;
+	}
+	auto buf = new pollfd[count];
+	delete[] this->entries;
+	this->entries = buf;
+	for (u16 i = 0; i < count; i++)
+	{
+		this->entries[i] = { .fd = 0, .events = 0, .revents = 0 };
+	}
+	this->count = count;
+}
+
+void ae::socket::Poller::set(u16 id, Socket s)
+{
+	if (id > this->count)
+	{
+		printf("Poller: ID #%i is greater than size %i\n",
+			id, this->count
+		);
+		return;
+	}
+	this->entries[id] = { .fd = s, .events = POLLIN, .revents = 0 };
+}
+
+void ae::socket::Poller::reset(u16 id)
+{
+	if (id > this->count)
+	{
+		printf("Poller: ID #%i is greater than size %i\n",
+			id, this->count
+		);
+		return;
+	}
+	this->entries[id] = { .fd = 0, .events = 0, .revents = 0 };
+}
+
+ae::i32 ae::socket::Poller::poll(i32 timeout)
+{
+	i32 result = 0;
+	#if defined(__WIN32__) or defined(_WIN32)
+	result = WSAPoll(this->entries, this->count, timeout);
+	#else
+	// TODO Linux implementation
+	#endif
+	return result;
+}
+
+ae::socket::Status ae::socket::Poller::get(u16 id)
+{
+	if (id > this->count)
+	{
+		printf("Poller: ID #%i is greater than size %i\n",
+			id, this->count
+		);
+		return Status::None;
+	}
+	if (this->entries[id].fd == 0) return Status::None;
+
+	auto status = this->entries[id].revents;
+	this->entries[id].revents = 0;
+	if (status == 0) return Status::None;
+	if (status & POLLRDNORM) return Status::Readable;
+	if (status & POLLHUP) return Status::Disconnected;
+	printf("Unknown poll status: %llu %i\n", this->entries[id].fd, status);
+	return Status::None;
+}
+
 void ae::socket::setBlocking(Socket s, bool blocking)
 {
 	#if defined(__WIN32__) or defined(_WIN32)
@@ -169,9 +271,9 @@ ae::net::TcpStream ae::net::TcpListener::accept()
 	sockaddr_in addr;
 	printf("Waiting for client...\n");
 	socket::Socket raw = ::accept(this->raw, (sockaddr*)&addr, NULL);
-	printf("Accepted client %s:%i\n",
-		inet_ntoa(addr.sin_addr), ntohs(addr.sin_port)
-	);
+	char ip4[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &addr, ip4, INET_ADDRSTRLEN);
+	printf("Accepted client %s:%i\n", ip4, htons(addr.sin_port));
 	return TcpStream(raw, addr);
 }
 
@@ -179,39 +281,45 @@ ae::socket::Socket ae::net::TcpListener::getSocket() { return this->raw; }
 
 ae::net::TcpStream::TcpStream()
 {
-	this->raw = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (this->raw == INVALID_SOCKET)
-	{
-		printf("Failed to create socket\n");
-		this->raw = 0;
-	}
-	memset(&this->addr, 0, sizeof(sockaddr_in));
+	this->raw = 0;
+	this->ip = "";
+	this->port = 0;
 }
 
 ae::net::TcpStream::TcpStream(socket::Socket s, sockaddr_in addr)
 {
 	this->raw = s;
-	this->addr = addr;
+	this->ip.resize(INET_ADDRSTRLEN, 'x');
+	inet_ntop(
+		AF_INET, &addr,
+		(char*)this->ip.c_str(), INET_ADDRSTRLEN
+	);
+	this->port = addr.sin_port;
 }
 
 ae::net::TcpStream::~TcpStream()
 {
-	if (this->raw != 0)
+	if (this->raw != 0 && this->port == 0)
 	{
+		printf("Destroying TcpStream #%llu\n", this->raw);
+		this->disconnect();
 		closesocket(this->raw);
 	}
 }
 
 bool ae::net::TcpStream::connect(std::string ip, u16 port)
 {
-	this->addr.sin_family = AF_INET;
-	this->addr.sin_port = htons(port);
-	this->addr.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
-	printf("Connecting to %s:%i\n", ip.c_str(), port);
+	if (this->raw == 0) { this->init(); }
+	sockaddr_in addr;
+	memset(&addr, 0, sizeof(sockaddr_in));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	addr.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
+	printf("Connecting %llu to %s:%i\n", this->raw, ip.c_str(), port);
 	
-	if (::connect(this->raw, (sockaddr*)&this->addr, sizeof(sockaddr_in)) == SOCKET_ERROR)
+	if (::connect(this->raw, (sockaddr*)&addr, sizeof(sockaddr_in)) == SOCKET_ERROR)
 	{
-		printf("Failed to connect\n");
+		printf("Failed to connect: %i\n", socket::getError());
 		return false;
 	}
 	printf("Connected\n");
@@ -220,7 +328,11 @@ bool ae::net::TcpStream::connect(std::string ip, u16 port)
 
 void ae::net::TcpStream::disconnect()
 {
+	if (this->ip.empty()) return;
 	::shutdown(this->raw, SD_BOTH);
+	this->ip.clear();
+	this->port = 0;
+	printf("TcpStream %llu disconnected\n", this->raw);
 }
 
 void ae::net::TcpStream::send(Packet p)
@@ -234,9 +346,26 @@ ae::net::Packet ae::net::TcpStream::recv()
 	Packet out;
 	auto buf = new char[8*1024];
 	auto size = ::recv(this->raw, buf, 8*1024, 0);
+	printf("%i\n", size);
 	out.len = size;
 	out.buf = new u8[size];
 	memcpy(out.buf, buf, size);
 	delete[] buf;
 	return out;
+}
+
+ae::socket::Socket ae::net::TcpStream::getSocket() { return this->raw; }
+std::string ae::net::TcpStream::getIP() { return this->ip; }
+ae::u16 ae::net::TcpStream::getPort() { return this->port; }
+
+void ae::net::TcpStream::init()
+{
+	this->raw = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (this->raw == INVALID_SOCKET)
+	{
+		printf("Failed to create socket\n");
+		this->raw = 0;
+	}
+	this->ip.clear();
+	this->port = 0;
 }

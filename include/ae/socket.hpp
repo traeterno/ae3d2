@@ -1,17 +1,12 @@
 #ifndef aeSocket
 #define aeSocket
 
-#if defined(__WIN32__) or defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <winsock2.h>
-#include <afunix.h>
-#endif
-
 #include <nlohmann/json_fwd.hpp>
 #include <ae/types.hpp>
 using nlohmann::json;
+
+struct pollfd;
+struct sockaddr_in;
 
 namespace ae::socket
 {
@@ -22,9 +17,27 @@ typedef unsigned long long Socket;
 typedef ae::i32 Socket;
 #endif
 
+enum Status { None, Readable, Disconnected };
+
+class Poller
+{
+public:
+	Poller();
+	~Poller();
+	void setCount(u16 count);
+	void set(u16 id, Socket s);
+	void reset(u16 id);
+	i32 poll(i32 timeout);
+	Status get(u16 id);
+private:
+	pollfd* entries;
+	u16 count;
+};
+
 void setBlocking(Socket s, bool blocking);
 void init();
 void shutdown();
+ae::i32 getError();
 
 }
 
@@ -67,10 +80,14 @@ public:
 	void send(Packet p);
 	Packet recv();
 	socket::Socket getSocket();
+	std::string getIP();
+	u16 getPort();
 private:
+	void init();
 	friend TcpListener;
 	socket::Socket raw;
-	sockaddr_in addr;
+	std::string ip;
+	u16 port;
 };
 
 }

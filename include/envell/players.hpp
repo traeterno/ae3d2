@@ -20,10 +20,12 @@ struct State
 	std::chrono::duration<long long, std::ratio<1, 1000>> tickTime;
 	ae::u16 port;
 
-	ae::u8 playersLimit;
+	ae::u8 playerLimit;
 	Player* players;
-	pollfd* sockets;
+	ae::socket::Poller sockets;
 };
+
+ae::u8 getEmptyID(State* state);
 
 }
 
