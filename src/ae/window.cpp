@@ -26,6 +26,12 @@ void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
 	window->key = KeyEvent { .key = key, .mods = mods, .action = action };
 }
 
+void mouseCallback(GLFWwindow* win, int button, int action, int mods)
+{
+	auto window = (Window*)glfwGetWindowUserPointer(win);
+	window->mouse = MouseEvent { .btn = button, .action = action, .mods = mods };
+}
+
 void scrollCallback(GLFWwindow* win, double x, double y)
 {
 	auto window = (Window*)glfwGetWindowUserPointer(win);
@@ -107,6 +113,7 @@ Window::Window(std::string path, int argc, char* argv[]):
 	glfwSetFramebufferSizeCallback(this->window, resizeCallback);
 	glfwSetKeyCallback(this->window, keyCallback);
 	glfwSetScrollCallback(this->window, scrollCallback);
+	glfwSetMouseButtonCallback(this->window, mouseCallback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -121,6 +128,8 @@ Window::Window(std::string path, int argc, char* argv[]):
 
 	printf("Created the window\n");
 	glViewport(0, 0, width, height);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	ae::socket::init();
 	if (!this->cam.init())
 	{
@@ -170,12 +179,18 @@ void Window::render()
 
 bool Window::keyPressed(std::string key)
 {
-	return glfwGetKey(this->window, ae::input::str2key(key)) == 1;
+	return glfwGetKey(this->window, ae::input::str2key(key)) == GLFW_PRESS;
+}
+
+bool Window::mousePressed(std::string btn)
+{
+	return glfwGetMouseButton(window, ae::input::str2btn(btn)) == GLFW_PRESS;
 }
 
 void Window::update()
 {
 	this->key = {0, 0, 0};
+	this->mouse = {0, 0, 0};
 	this->scroll = {0, 0};
 	glfwPollEvents();
 	auto p = hrc::now();

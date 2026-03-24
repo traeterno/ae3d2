@@ -420,7 +420,7 @@ void ae::mesh::Skeleton::render(ae::Camera* cam, glm::mat4 ts)
 	delete[] pts;
 }
 
-void ae::mesh::Skeleton::setAnimation(std::string name)
+void ae::mesh::Skeleton::startAnimation(std::string name)
 {
 	auto t = this->anims.find(name);
 	if (t == this->anims.end()) return;

@@ -212,7 +212,7 @@ void Camera::drawText(u32 id, usize len, glm::mat3 rot, glm::mat4 ts)
 		4 * sizeof(f32), 0
 	);
 	this->shaderUse("text");
-	this->textureUse(this->fontName.c_str());
+	this->textureUse(0, this->fontName.c_str());
 	this->shaderSetModel(ts);
 	glDrawArrays(GL_TRIANGLES, 0, len);
 }
@@ -445,6 +445,19 @@ void Camera::shaderInt(const char* uniform, i32 value)
 	glUniform1i(pos, value);
 }
 
+void Camera::shaderFloat(const char* uniform, f32 value)
+{
+	i32 pos = glGetUniformLocation(this->currentShader, uniform);
+	if (pos == -1)
+	{
+		printf("Uniform \"%s\" was not found (Shader #%i)\n",
+			uniform, this->currentShader
+		);
+		return;
+	}
+	glUniform1f(pos, value);
+}
+
 void Camera::shaderSetModel(glm::mat4 model)
 {
 	Camera::shaderMat4("matrix",
@@ -457,12 +470,14 @@ i32 Camera::shaderGetPos(const char* uniform)
 	return glGetUniformLocation(this->currentShader, uniform);
 }
 
-void Camera::textureUse(const char* name)
+void Camera::textureUse(u8 id, const char* name)
 {
 	auto t = this->getTexture(name);
 	if (this->currentTexture == t.id) return;
 	this->currentTexture = t.id;
+	glActiveTexture(GL_TEXTURE0 + id);
 	glBindTexture(GL_TEXTURE_2D, this->currentTexture);
+	glActiveTexture(GL_TEXTURE0);
 }
 
 u32 loadShader(const char* name)
@@ -542,8 +557,8 @@ Texture loadTexture(const char* name)
 		w, h, 0,
 		format, GL_UNSIGNED_BYTE, data
 	);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	stbi_image_free(data);
 	return { id, (ae::u32)w, (ae::u32)h };

@@ -36,6 +36,7 @@ namespace ae::script
 namespace ae::input
 {
 	i32 str2key(std::string key);
+	i32 str2btn(std::string btn);
 }
 
 namespace ae::math

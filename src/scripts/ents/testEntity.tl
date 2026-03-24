@@ -11,7 +11,6 @@ local active: boolean
 local getInput: function(): aeMath.Vec3
 
 global function Init()
-
 	aeCamera.loadGLTF("heroV2")
 	aeEntity.loadMesh("heroV2", "Body")
 	aeCamera.unloadGLTF("heroV2")
@@ -21,8 +20,8 @@ global function Init()
 	ready = false
 	active = false
 
-	aeEntity.setAnimation("Summon")
-	aeEntity.setAnimation("IdleLower")
+	aeEntity.startAnimation("Summon")
+	aeEntity.startAnimation("IdleLower")
 
 	cam = Camera.new()
 	cam.distance = 2.5
@@ -42,7 +41,7 @@ global function Update()
 		if aeNetwork.isReady() then
 			ready = true
 			aeEntity.stopAnimation("Summon")
-			aeEntity.setAnimation("IdleUpper")
+			aeEntity.startAnimation("IdleUpper")
 			cam.orientation.x = 180
 			cam:apply()
 		end

@@ -29,7 +29,7 @@ public:
 	void clear();
 	void display();
 	void resized();
-	void textureUse(const char* id);
+	void textureUse(u8 index, const char* id);
 	void bindVAO(u32 id);
 	void bindTexture(const char* id);
 	void bindTexture(u32 id);
@@ -59,6 +59,7 @@ public:
 	void shaderVec3(const char* uniform, glm::vec3 value);
 	void shaderVec4(const char* uniform, glm::vec4 value);
 	void shaderInt(const char* uniform, i32 value);
+	void shaderFloat(const char* uniform, f32 value);
 	void shaderSetModel(glm::mat4 model);
 	i32 shaderGetPos(const char* uniform);
 private:

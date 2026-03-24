@@ -79,7 +79,7 @@ end
 function Sprite:draw()
 	if self.texture == "" then return end
 	aeCamera.shaderUse("sprite")
-	aeCamera.textureUse(self.texture)
+	aeCamera.textureUse(0, self.texture)
 	aeCamera.shaderInt("tex", 0)
 	aeCamera.shaderVec4("rect", self.texRect)
 	aeCamera.shaderVec2("texSize", self.texSize)

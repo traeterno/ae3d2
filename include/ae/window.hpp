@@ -18,6 +18,7 @@ namespace ae
 {
 
 struct KeyEvent { i32 key; i32 mods; i32 action; };
+struct MouseEvent { i32 btn; i32 action; i32 mods; };
 
 class Window
 {
@@ -29,6 +30,7 @@ public:
 	void display();
 	void render();
 	bool keyPressed(std::string key);
+	bool mousePressed(std::string btn);
 	glm::vec2 getSize();
 	f32 getDeltaTime();
 	glm::vec2 mousePos();
@@ -42,6 +44,7 @@ public:
 	world::World* getWorld();
 	NetworkClient* getNC();
 	KeyEvent key;
+	MouseEvent mouse;
 	glm::vec2 scroll;
 private:
 	std::chrono::time_point<hrc> deltaTimer;

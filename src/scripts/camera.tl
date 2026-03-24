@@ -49,7 +49,7 @@ function Camera:noclip()
 	end
 	if not self.cursorLock then return end
 	local deltaAngle = aeCamera.mouseDelta()
-	self.orientation.x = (self.orientation.x - deltaAngle.x * self.sensitivity) % 360.0
+	self.orientation.x = (self.orientation.x + deltaAngle.x * self.sensitivity) % 360.0
 	self.orientation.y = aeMath.clamp(
 		self.orientation.y - deltaAngle.y * self.sensitivity, -80, 80
 	)
@@ -59,8 +59,8 @@ function Camera:noclip()
 	local input = aeMath.Vec3.new(0, 0, 0)
 	if aeWindow.keyPressed("W") then input.z = input.z + 1 end
 	if aeWindow.keyPressed("S") then input.z = input.z - 1 end
-	if aeWindow.keyPressed("A") then input.x = input.x + 1 end
-	if aeWindow.keyPressed("D") then input.x = input.x - 1 end
+	if aeWindow.keyPressed("A") then input.x = input.x - 1 end
+	if aeWindow.keyPressed("D") then input.x = input.x + 1 end
 	if aeWindow.keyPressed("Space") then input.y = input.y + 1 end
 	if aeWindow.keyPressed("LShift") then input.y = input.y - 1 end
 

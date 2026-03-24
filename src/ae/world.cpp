@@ -138,6 +138,8 @@ void World::spawn(const char* id, const char* name)
 	if (this->ready) e->init();
 }
 
+lua_State* World::getScript() { return this->state; }
+
 Entity::Entity(ae::Window* win, const char* id, const char* path):
 	mesh(nullptr)
 {
@@ -194,3 +196,5 @@ ae::mesh::Mesh* Entity::getMesh()
 {
 	return &this->mesh;
 }
+
+lua_State* Entity::getScript() { return this->state; }

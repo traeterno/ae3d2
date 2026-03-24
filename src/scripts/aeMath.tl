@@ -1,3 +1,7 @@
+local pow = math.pow
+local cos = math.cos
+local sin = math.sin
+
 local record Vec2
 	x: number
 	y: number
@@ -25,7 +29,7 @@ function Vec3.new(x: number, y: number, z: number): Vec3
 end
 
 function Vec3:lengthSquared(): number
-	return math.pow(self.x, 2) + math.pow(self.y, 2) + math.pow(self.z, 2)
+	return pow(self.x, 2) + pow(self.y, 2) + pow(self.z, 2)
 end
 
 function Vec3:length(): number
@@ -89,10 +93,6 @@ local function Clamp(x: number, min: number, max: number): number
 	return math.min(math.max(x, min), max)
 end
 
-local function Lerp(a: number, b: number, t: number): number
-	return a * (1 - t) + b * t
-end
-
 local function Cycle(x: number, cycle: number): number
 	while x < 0 do x = x + cycle end
 	return x % cycle
@@ -118,6 +118,65 @@ local function HSV2RGB(h: number, s: number, v: number): Vec3
 	else return clr(c + m, m, x + m) end
 end
 
+local Shapes: { string : integer } = {
+	Points = 0,
+	Lines = 1,
+	LineLoop = 2,
+	LineStrip = 3,
+	Triangles = 4,
+	TriangleStrip = 5,
+	TriangleFan = 6
+}
+
+local function Lerp(a: number, b: number, t: number): number
+	return a * (1 - t) + b * t
+end
+
+local function SineIn(t: number): number
+	return 1 - cos(t * math.pi * 0.5)
+end
+
+local function SineOut(t: number): number
+	return sin(t * math.pi * 0.5)
+end
+
+local function SineInOut(t: number): number
+	return -(cos(math.pi * t) - 1) * 0.5
+end
+
+local function QuadIn(t: number): number
+	return pow(t, 2)
+end
+
+local function QuadOut(t: number): number
+	return 1 - pow(1 - t, 2)
+end
+
+local function QuadInOut(t: number): number
+	if t < 0.5 then return 2 * pow(t, 2)
+	else return 1 - pow(-2 * t + 2, 2) * 0.5 end
+end
+
+local function CubicIn(t: number): number
+	return pow(t, 3)
+end
+
+local function CubicOut(t: number): number
+	return 1 - pow(1 - t, 3)
+end
+
+local function CubicInOut(t: number): number
+	if t < 0.5 then return 4 * pow(t, 3)
+	else return 1 - pow(-2 * t + 2, 3) * 0.5 end
+end
+
+local function Contains(bounds: Vec4, point: Vec2): boolean
+	return (
+		point.x >= bounds.x and point.x <= bounds.x + bounds.z and
+		point.y >= bounds.y and point.y <= bounds.y + bounds.w
+	)
+end
+
 return {
 	Vec2 = Vec2,
 	Vec3 = Vec3,
@@ -125,8 +184,21 @@ return {
 	Quat = Quat,
 	Transform = Transform,
 	clamp = Clamp,
-	lerp = Lerp,
 	cycle = Cycle,
 	rotationLerp = RotationLerp,
-	hsv2rgb = HSV2RGB
+	hsv2rgb = HSV2RGB,
+	shapes = Shapes,
+	lerp = Lerp,
+	contains = Contains,
+	easings = {
+		sineIn = SineIn,
+		sineOut = SineOut,
+		sineInOut = SineInOut,
+		quadIn = QuadIn,
+		quadOut = QuadOut,
+		quadInOut = QuadInOut,
+		cubicIn = CubicIn,
+		cubicOut = CubicOut,
+		cubicInOut = CubicInOut
+	}
 }

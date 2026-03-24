@@ -25,6 +25,7 @@ public:
 	bool update();
 	bool render();
 	mesh::Mesh* getMesh();
+	lua_State* getScript();
 private:
 	lua_State* state;
 	mesh::Mesh mesh;
@@ -43,6 +44,7 @@ public:
 	void render();
 	void requestReload(const char* name);
 	void spawn(const char* id, const char* path);
+	lua_State* getScript();
 private:
 	std::unordered_map<std::string, Entity*> ents;
 	lua_State* state;

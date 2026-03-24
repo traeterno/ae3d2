@@ -158,6 +158,16 @@ ae::i32 ae::input::str2key(std::string key)
 	return GLFW_KEY_LAST;
 }
 
+ae::i32 ae::input::str2btn(std::string btn)
+{
+	if (btn == "Left") return GLFW_MOUSE_BUTTON_LEFT;
+	if (btn == "Right") return GLFW_MOUSE_BUTTON_RIGHT;
+	if (btn == "Middle") return GLFW_MOUSE_BUTTON_MIDDLE;
+	if (btn == "X1") return GLFW_MOUSE_BUTTON_3;
+	if (btn == "X2") return GLFW_MOUSE_BUTTON_4;
+	return GLFW_MOUSE_BUTTON_LAST;
+}
+
 glm::quat ae::math::buildQuat(float yaw, float pitch, float roll, bool relative)
 {
 	yaw = glm::radians(yaw);

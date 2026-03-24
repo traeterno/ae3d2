@@ -68,7 +68,7 @@ public:
 	void load(gltf::GLTF* file, u8 id);
 	void update(f32 dt, ae::Camera* cam);
 	void render(ae::Camera* cam, glm::mat4 ts);
-	void setAnimation(std::string name);
+	void startAnimation(std::string name);
 	void stopAnimation(std::string name);
 private:
 	glm::mat4* inverseBindMatrices;
