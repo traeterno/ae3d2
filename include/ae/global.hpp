@@ -41,7 +41,7 @@ namespace ae::input
 
 namespace ae::math
 {
-	glm::quat buildQuat(float yaw, float pitch, float roll, bool relative);
+	glm::quat buildQuat(float yaw, float pitch, float roll, bool camera);
 	ae::f32 f32(u8* data);
 	ae::u16 u16(u8* data);
 	u8* toLE(ae::f32 data);

@@ -17,7 +17,7 @@ function Sprite.new(): Sprite
 	local self: Sprite = setmetatable({}, { __index = Sprite })
 	self.ts = {
 		pos = Vec3.new(0, 0, 0),
-		angle = Quat.new(0, 0, 0, true),
+		angle = Quat.new(0, 0, 0),
 		origin = Vec3.new(0, 0, 0),
 		scale = Vec3.new(1, 1, 1)
 	}

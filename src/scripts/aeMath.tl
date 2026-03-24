@@ -61,15 +61,13 @@ local record Quat
 	yaw: number
 	pitch: number
 	roll: number
-	relative: boolean
 end
 
-function Quat.new(yaw: number, pitch: number, roll: number, relative: boolean): Quat
+function Quat.new(yaw: number, pitch: number, roll: number): Quat
 	local self: Quat = setmetatable({}, { __index = Quat })
 	self.yaw = yaw
 	self.pitch = pitch
 	self.roll = roll
-	self.relative = relative
 	return self
 end
 
@@ -83,7 +81,7 @@ end
 function Transform.new(): Transform
 	local self: Transform = setmetatable({}, { __index = Transform })
 	self.pos = Vec3.new(0, 0, 0)
-	self.angle = Quat.new(0, 0, 0, true)
+	self.angle = Quat.new(0, 0, 0)
 	self.scale = Vec3.new(1, 1, 1)
 	self.origin = Vec3.new(0, 0, 0)
 	return self

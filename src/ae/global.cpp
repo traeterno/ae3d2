@@ -168,19 +168,23 @@ ae::i32 ae::input::str2btn(std::string btn)
 	return GLFW_MOUSE_BUTTON_LAST;
 }
 
-glm::quat ae::math::buildQuat(float yaw, float pitch, float roll, bool relative)
+glm::quat ae::math::buildQuat(float yaw, float pitch, float roll, bool camera)
 {
 	yaw = glm::radians(yaw);
 	pitch = glm::radians(pitch);
 	roll = glm::radians(roll);
-	glm::quat q(1.0, 0.0, 0.0, 0.0);
-	q = glm::rotate(q, yaw, glm::vec3(0, 1, 0));
-	if (relative)
+	glm::quat q = glm::identity<glm::quat>();
+	if (camera)
 	{
-		auto right = glm::vec3(1.0, 0.0, 0.0) * q;
-		q = glm::rotate(q, pitch, right);
-		auto front = glm::vec3(0.0, 0.0, 1.0) * q;
-		q = glm::rotate(q, roll, front);
+		q = glm::rotate(q, roll, glm::vec3(0, 0, 1));
+		q = glm::rotate(q, pitch, glm::vec3(1, 0, 0));
+		q = glm::rotate(q, yaw, glm::vec3(0, 1, 0));
+	}
+	else
+	{
+		q = glm::rotate(q, yaw, glm::vec3(0, 1, 0));
+		q = glm::rotate(q, pitch, glm::vec3(1, 0, 0));
+		q = glm::rotate(q, roll, glm::vec3(0, 0, 1));
 	}
 	return q;
 }

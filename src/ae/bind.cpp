@@ -136,14 +136,13 @@ glm::quat lua_quat(lua_State* script)
 	lua_getfield(script, -1, "yaw");
 	lua_getfield(script, -2, "pitch");
 	lua_getfield(script, -3, "roll");
-	lua_getfield(script, -4, "relative");
 	auto q = ae::math::buildQuat(
-		lua_tonumber(script, -4),
 		lua_tonumber(script, -3),
 		lua_tonumber(script, -2),
-		lua_toboolean(script, -1)
+		lua_tonumber(script, -1),
+		false
 	);
-	lua_pop(script, 5);
+	lua_pop(script, 4);
 	return q;
 }
 
