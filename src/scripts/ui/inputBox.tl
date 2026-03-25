@@ -44,6 +44,9 @@ function InputBox:update(): boolean
 		self.txt:setString(self:getString())
 		return false
 	end
+
+	if aeWindow.keyJustPressed("Escape") then self.active = false end
+
 	self.timer = (self.timer + aeWindow.dt()) % 1
 	self.repeatTO = self.repeatTO + aeWindow.dt()
 

@@ -127,20 +127,6 @@ global function Update()
 	end
 
 	local i = input[1]
-	-- local winSize = aeWindow.size()
-	-- input[2] = input[2] + aeWindow.dt()
-	-- i.ts.pos.x = winSize.x * 0.5
-	-- if input[1].active then
-	-- 	i.ts.pos.y = aeMath.lerp(
-	-- 		winSize.y, winSize.y * 0.8,
-	-- 		aeMath.easings.cubicInOut(aeMath.clamp(input[2], 0, 1))
-	-- 	)
-	-- else
-	-- 	i.ts.pos.y = aeMath.lerp(
-	-- 		winSize.y * 0.8, winSize.y,
-	-- 		aeMath.easings.cubicInOut(aeMath.clamp(input[2], 0, 1))
-	-- 	)
-	-- end
 
 	if i:update() then
 		local addr = i:getString()

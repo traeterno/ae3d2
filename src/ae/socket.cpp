@@ -489,9 +489,9 @@ void ae::net::UdpSocket::setBroadcast(bool active)
 {
 	if (this->raw == 0) return;
 	char enable = active ? '1' : '0';
-	printf("setBroadcast: %i\n", setsockopt(this->raw, SOL_SOCKET,
+	setsockopt(this->raw, SOL_SOCKET,
 		SO_BROADCAST, &enable, 1
-	));
+	);
 }
 
 void ae::net::UdpSocket::setTimeout(float send, float recv)
@@ -501,14 +501,14 @@ void ae::net::UdpSocket::setTimeout(float send, float recv)
 	timeval s, r;
 	s.tv_sec = floor(send); s.tv_usec = (i32)((send - s.tv_sec) * 1e6);
 	r.tv_sec = floor(recv); r.tv_usec = (i32)((recv - r.tv_sec) * 1e6);
-	printf("setRecvTimeout: %i\n", setsockopt(
+	setsockopt(
 		this->raw, SOL_SOCKET, SO_RCVTIMEO,
 		(char*)&r, sizeof(timeval)
-	));
-	printf("setSendTimeout: %i\n", setsockopt(
+	);
+	setsockopt(
 		this->raw, SOL_SOCKET, SO_SNDTIMEO,
 		(char*)&s, sizeof(timeval)
-	));
+	);
 }
 
 ae::socket::Socket ae::net::UdpSocket::getSocket() { return this->raw; }
