@@ -22,6 +22,7 @@ void UI::init()
 	ae::bind::window(this->state);
 	ae::bind::camera(this->state);
 	ae::bind::world(this->state);
+	ae::bind::network(this->state);
 
 	printf("Initialized UI\n");
 }

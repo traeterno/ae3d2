@@ -39,6 +39,8 @@ void init();
 void shutdown();
 ae::i32 getError();
 
+typedef std::pair<std::string, u16> IpAddress;
+
 }
 
 namespace ae::sync
@@ -65,8 +67,10 @@ public:
 	void bind(u16 port);
 	TcpStream accept();
 	socket::Socket getSocket();
+	u16 getPort();
 private:
 	socket::Socket raw;
+	u16 port;
 };
 
 class TcpStream
@@ -87,6 +91,25 @@ private:
 	friend TcpListener;
 	socket::Socket raw;
 	std::string ip;
+	u16 port;
+};
+
+class UdpSocket
+{
+public:
+	UdpSocket();
+	~UdpSocket();
+	void bind(u16 port);
+	void unbind();
+	void send(socket::IpAddress ip, Packet p);
+	std::pair<socket::IpAddress, Packet> recv();
+	void setBroadcast(bool active);
+	u16 getPort();
+	socket::Socket getSocket();
+	void setTimeout(float send, float recv);
+private:
+	void init();
+	socket::Socket raw;
 	u16 port;
 };
 

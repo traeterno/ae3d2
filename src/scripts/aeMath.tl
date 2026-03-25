@@ -175,6 +175,17 @@ local function Contains(bounds: Vec4, point: Vec2): boolean
 	)
 end
 
+local NetworkStatus: { string : number} = {
+	Idle = 0,
+	Disconnected = 1,
+	Connected = 2,
+	ConnectionFailed = 3,
+	Connecting = 4,
+	Searching = 5,
+	ServerFound = 6,
+	ServerNotFound = 7
+}
+
 return {
 	Vec2 = Vec2,
 	Vec3 = Vec3,
@@ -198,5 +209,6 @@ return {
 		cubicIn = CubicIn,
 		cubicOut = CubicOut,
 		cubicInOut = CubicInOut
-	}
+	},
+	networkStatus = NetworkStatus
 }

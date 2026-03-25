@@ -14,6 +14,7 @@ global record aeWindow
 	mousePos: function(): aeMath.Vec2
 	mousePressed: function(string): boolean
 	mouseJustPressed: function(string): boolean
+	textInput: function(): integer
 end
 
 global record aeCamera
@@ -60,7 +61,12 @@ end
 global record aeNetwork
 	connect: function(string, integer)
 	disconnect: function()
+	reconnect: function()
 	isReady: function(): boolean
+	search: function()
+	getServerIP: function(): string, integer
+	stopSearch: function()
+	status: function(): integer
 end
 
 global _winptr: integer

@@ -17,7 +17,6 @@ void envell::cfg::saveConfig(json& v)
 json envell::cfg::defaultConfig()
 {
 	return json {
-		{ "port", 26225 },
 		{ "playersCount", 8 },
 		{ "tickRate", 20 }
 	};

@@ -20,7 +20,6 @@ struct State
 
 	ae::u16 tickRate;
 	std::chrono::duration<long long, std::ratio<1, 1000>> tickTime;
-	ae::u16 port;
 
 	ae::u8 playerLimit;
 	Player* players;

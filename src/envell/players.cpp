@@ -5,6 +5,7 @@
 
 void setup(envell::players::State* s, json data);
 void handleMessage(envell::players::State* state, ae::socket::Socket s);
+void handleUDP(envell::players::State* state, ae::net::UdpSocket s, ae::net::TcpListener* l);
 void handlePlayer(envell::players::State* state, ae::u8 id, ae::socket::Status status);
 
 void envell::players::main(ae::socket::Socket mainFD)
@@ -27,9 +28,12 @@ void envell::players::main(ae::socket::Socket mainFD)
 	ae::socket::setBlocking(mainFD, false);
 
 	ae::net::TcpListener listener;
-	listener.bind(state.port);
+	ae::net::UdpSocket udp;
+	udp.bind(26225);
+	udp.setBroadcast(true);
+	listener.bind(0);
 	state.sockets.set(state.playerLimit, listener.getSocket());
-	// state.sockets[state.playersLimit + 1] = UDP
+	state.sockets.set(state.playerLimit + 1, udp.getSocket());
 	state.sockets.set(state.playerLimit + 2, mainFD);
 
 	bool running = true;
@@ -43,6 +47,12 @@ void envell::players::main(ae::socket::Socket mainFD)
 			{
 				printf("PM: Message from main thread\n");
 				handleMessage(&state, mainFD);
+				continue;
+			}
+			if (state.sockets.get(state.playerLimit + 1) == ae::socket::Readable)
+			{
+				printf("PM: Message on UDP\n");
+				handleUDP(&state, udp, &listener);
 				continue;
 			}
 			if (state.sockets.get(state.playerLimit) == ae::socket::Readable)
@@ -87,7 +97,6 @@ void setup(envell::players::State* s, json data)
 
 	s->tickRate = data["tickRate"];
 	s->tickTime = std::chrono::milliseconds(1000 / s->tickRate);
-	s->port = data["port"];
 
 	if (s->players != nullptr) delete[] s->players;
 	s->playerLimit = data["playersCount"];
@@ -117,4 +126,22 @@ void handlePlayer(envell::players::State* state, ae::u8 id, ae::socket::Status s
 	}
 	auto packet = p->tcp.recv();
 	printf("Received %i bytes from P%i\n", packet.len, id);
+}
+
+void handleUDP(envell::players::State* state, ae::net::UdpSocket s, ae::net::TcpListener* l)
+{
+	auto [addr, packet] = s.recv();
+	auto [ip, port] = addr;
+
+	if (state->allowNewPlayers)
+	{
+		ae::u16 magic = ((ae::u16)packet.buf[0] << 8) + packet.buf[1];
+		if (magic != 26225) return;
+		printf("Potential player %s:%i\n", ip.c_str(), port);
+		ae::net::Packet p { .buf = new ae::u8[2], .len = 2 };
+		auto listener = l->getPort();
+		p.buf[0] = listener >> 8; p.buf[1] = listener & 255;
+		s.send(addr, p);
+		delete[] p.buf;
+	}
 }

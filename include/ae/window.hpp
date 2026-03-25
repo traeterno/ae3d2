@@ -46,6 +46,7 @@ public:
 	KeyEvent key;
 	MouseEvent mouse;
 	glm::vec2 scroll;
+	u32 codepoint;
 private:
 	std::chrono::time_point<hrc> deltaTimer;
 	f32 deltaTime;

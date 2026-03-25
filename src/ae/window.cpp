@@ -14,6 +14,7 @@ void errorCallback(int id, const char* description)
 
 void resizeCallback(GLFWwindow* win, int w, int h)
 {
+	if (w == 0 || h == 0) return;
 	glViewport(0, 0, w, h);
 	auto window = (Window*)glfwGetWindowUserPointer(win);
 	window->getUI()->resized();
@@ -36,6 +37,12 @@ void scrollCallback(GLFWwindow* win, double x, double y)
 {
 	auto window = (Window*)glfwGetWindowUserPointer(win);
 	window->scroll = {x, y};
+}
+
+void charCallback(GLFWwindow* win, ae::u32 ch)
+{
+	auto window = (Window*)glfwGetWindowUserPointer(win);
+	window->codepoint = ch;
 }
 
 UI* Window::getUI() { return &this->ui; }
@@ -114,6 +121,7 @@ Window::Window(std::string path, int argc, char* argv[]):
 	glfwSetKeyCallback(this->window, keyCallback);
 	glfwSetScrollCallback(this->window, scrollCallback);
 	glfwSetMouseButtonCallback(this->window, mouseCallback);
+	glfwSetCharCallback(this->window, charCallback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
@@ -192,11 +200,13 @@ void Window::update()
 	this->key = {0, 0, 0};
 	this->mouse = {0, 0, 0};
 	this->scroll = {0, 0};
+	this->codepoint = 0;
 	glfwPollEvents();
 	auto p = hrc::now();
 	constexpr f32 scaler = 1e-6;
 	this->deltaTime = (f32)(std::chrono::duration_cast<std::chrono::microseconds>
 		(p - this->deltaTimer).count()) * scaler;
+	this->deltaTime = glm::clamp(this->deltaTime, 0.001f, 0.1f);
 	this->deltaTimer = p;
 	this->cam.clearCache();
 	this->world.update();

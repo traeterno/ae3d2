@@ -83,7 +83,7 @@ function ButtonList:update(): string
 				scale = aeMath.lerp(scale, 0.8, aeWindow.dt() * 10)
 			end
 			btn.txt.ts.scale = aeMath.Vec3.new(scale * self.targetScale, scale * self.targetScale, 0)
-			if status ~= 0 and self.timer > 0.5 then
+			if status ~= 0 and self.timer > 0.625 then
 				out = tostring(status)..btn.id
 			end
 		else

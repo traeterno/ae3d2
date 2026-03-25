@@ -307,6 +307,21 @@ LUA(window_mouseJustPressed)
 	return 1;
 }
 
+LUA(window_textInput)
+{
+	lua_pushinteger(script, getWindow(script)->codepoint);
+	// auto c = getWindow(script)->codepoint;
+	// std::string out;
+	// if (c < 192) { out.push_back(c); }
+	// else
+	// {
+	// 	out.push_back(192 | (c >> 6));
+	// 	out.push_back(128 | (c & 63));
+	// }
+	// lua_pushstring(script, out.c_str());
+	return 1;
+}
+
 void ae::bind::window(lua_State* script)
 {
 	lua_createtable(script, 0, 13);
@@ -323,6 +338,7 @@ void ae::bind::window(lua_State* script)
 	insertFunction(script, "mousePos", ae_window_mousePos);
 	insertFunction(script, "mousePressed", ae_window_mousePressed);
 	insertFunction(script, "mouseJustPressed", ae_window_mouseJustPressed);
+	insertFunction(script, "textInput", ae_window_textInput);
 	lua_setglobal(script, "aeWindow");
 }
 
@@ -682,11 +698,49 @@ LUA(network_isReady)
 	return 1;
 }
 
+LUA(network_search)
+{
+	getWindow(script)->getNC()->search();
+	return 0;
+}
+
+LUA(network_getServerIP)
+{
+	auto [ip, port] = getWindow(script)->getNC()->getServerIP();
+	lua_pushstring(script, ip.c_str());
+	lua_pushinteger(script, port);
+	return 2;
+}
+
+LUA(network_reconnect)
+{
+	getWindow(script)->getNC()->reconnect();
+	return 0;
+}
+
+LUA(network_stopSearch)
+{
+	getWindow(script)->getNC()->stopSearch();
+	return 0;
+}
+
+LUA(network_status)
+{
+	auto cs = getWindow(script)->getNC()->getConnectionStatus();
+	lua_pushinteger(script, (i32)cs);
+	return 1;
+}
+
 void ae::bind::network(lua_State* script)
 {
 	lua_createtable(script, 0, 3);
 	insertFunction(script, "connect", ae_network_connect);
 	insertFunction(script, "disconnect", ae_network_disconnect);
+	insertFunction(script, "reconnect", ae_network_reconnect);
 	insertFunction(script, "isReady", ae_network_isReady);
+	insertFunction(script, "search", ae_network_search);
+	insertFunction(script, "getServerIP", ae_network_getServerIP);
+	insertFunction(script, "stopSearch", ae_network_stopSearch);
+	insertFunction(script, "status", ae_network_status);
 	lua_setglobal(script, "aeNetwork");
 }

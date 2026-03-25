@@ -15,7 +15,7 @@ global function Init()
 
 	transform = aeMath.Transform.new()
 	state = "Idle"
-	transition = 1.0
+	transition = 0.0
 	
 	idle = coroutine.create(idleFN)
 	conn = coroutine.create(connFN)

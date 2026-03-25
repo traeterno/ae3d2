@@ -155,6 +155,7 @@ ae::i32 ae::input::str2key(std::string key)
 	if (key == "Minus") return GLFW_KEY_MINUS;
 	if (key == "Equal") return GLFW_KEY_EQUAL;
 	if (key == "Tab") return GLFW_KEY_TAB;
+	if (key == "Enter") return GLFW_KEY_ENTER;
 	return GLFW_KEY_LAST;
 }
 

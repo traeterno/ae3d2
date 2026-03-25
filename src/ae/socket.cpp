@@ -224,7 +224,8 @@ json ae::sync::recv(socket::Socket s)
 
 ae::net::TcpListener::TcpListener()
 {
-	this->raw = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	this->port = 0;
+	this->raw = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (this->raw < 0)
 	{
 		printf("Failed to create TcpListener socket\n");
@@ -246,10 +247,12 @@ void ae::net::TcpListener::bind(u16 port)
 	if (this->raw == 0) { *this = TcpListener(); }
 
 	sockaddr_in ip;
+	i32 size = sizeof(sockaddr_in);
+	memset(&ip, 0, size);
 	ip.sin_family = AF_INET;
 	ip.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
 	ip.sin_port = htons(port);
-	if (::bind(this->raw, (sockaddr*)&ip, sizeof(sockaddr_in)) == SOCKET_ERROR)
+	if (::bind(this->raw, (sockaddr*)&ip, size) == SOCKET_ERROR)
 	{
 		printf("Failed to bind listener\n");
 		closesocket(this->raw);
@@ -263,17 +266,29 @@ void ae::net::TcpListener::bind(u16 port)
 		this->raw = 0;
 		return;
 	}
-	printf("Started listener on port %i\n", port);
+
+	getsockname(this->raw, (sockaddr*)&ip, &size);
+	this->port = ntohs(ip.sin_port);
+	printf("Started listener on port %i\n", this->port);
+}
+
+ae::u16 ae::net::TcpListener::getPort()
+{
+	sockaddr_in addr;
+	i32 size = sizeof(sockaddr_in);
+	getsockname(this->raw, (sockaddr*)&addr, &size);
+	this->port = ntohs(addr.sin_port);
+	return this->port;
 }
 
 ae::net::TcpStream ae::net::TcpListener::accept()
 {
 	sockaddr_in addr;
-	printf("Waiting for client...\n");
-	socket::Socket raw = ::accept(this->raw, (sockaddr*)&addr, NULL);
-	char ip4[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &addr, ip4, INET_ADDRSTRLEN);
-	printf("Accepted client %s:%i\n", ip4, htons(addr.sin_port));
+	i32 size = sizeof(sockaddr_in);
+	memset(&addr, 0, size);
+	socket::Socket raw = ::accept(this->raw, (sockaddr*)&addr, &size);
+	std::string ip = inet_ntoa(addr.sin_addr);
+	printf("Accepted client %s:%i\n", ip.c_str(), ntohs(addr.sin_port));
 	return TcpStream(raw, addr);
 }
 
@@ -289,19 +304,14 @@ ae::net::TcpStream::TcpStream()
 ae::net::TcpStream::TcpStream(socket::Socket s, sockaddr_in addr)
 {
 	this->raw = s;
-	this->ip.resize(INET_ADDRSTRLEN, 'x');
-	inet_ntop(
-		AF_INET, &addr,
-		(char*)this->ip.c_str(), INET_ADDRSTRLEN
-	);
-	this->port = addr.sin_port;
+	this->ip = inet_ntoa(addr.sin_addr);
+	this->port = ntohs(addr.sin_port);
 }
 
 ae::net::TcpStream::~TcpStream()
 {
 	if (this->raw != 0 && this->port == 0)
 	{
-		this->disconnect();
 		closesocket(this->raw);
 	}
 }
@@ -318,16 +328,12 @@ void ae::net::TcpStream::connect(std::string ip, u16 port)
 	
 	if (::connect(this->raw, (sockaddr*)&addr, sizeof(sockaddr_in)) == SOCKET_ERROR)
 	{
-		printf("Failed to connect to %s%i: %i\n", ip.c_str(), port, socket::getError());
+		printf("Failed to connect to %s:%i: %i\n", ip.c_str(), port, socket::getError());
 		return;
 	}
 
-	this->ip.resize(INET_ADDRSTRLEN, 'x');
-	inet_ntop(
-		AF_INET, &addr,
-		(char*)this->ip.c_str(), INET_ADDRSTRLEN
-	);
-	this->port = addr.sin_port;
+	this->ip = inet_ntoa(addr.sin_addr);
+	this->port = ntohs(addr.sin_port);
 
 	return;
 }
@@ -364,12 +370,161 @@ ae::u16 ae::net::TcpStream::getPort() { return this->port; }
 
 void ae::net::TcpStream::init()
 {
-	this->raw = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (this->raw != 0) { closesocket(this->raw); }
+	this->raw = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (this->raw == INVALID_SOCKET)
 	{
-		printf("Failed to create socket\n");
+		printf("Failed to create stream: %i\n",
+			socket::getError()
+		);
 		this->raw = 0;
 	}
 	this->ip.clear();
+	this->port = 0;
+}
+
+ae::net::UdpSocket::UdpSocket()
+{
+	this->raw = 0;
+	this->port = 0;
+}
+
+ae::net::UdpSocket::~UdpSocket()
+{
+	if (this->port != 0) return;
+	closesocket(this->raw);
+}
+
+void ae::net::UdpSocket::bind(u16 port)
+{
+	if (this->port != 0) { this->unbind(); }
+	if (this->raw == 0) { this->init(); }
+	
+	sockaddr_in addr;
+	i32 size = sizeof(sockaddr_in);
+	memset(&addr, 0, size);
+	addr.sin_family = AF_INET;
+	addr.sin_addr.S_un.S_addr = INADDR_ANY;
+	addr.sin_port = htons(port);
+
+	if (::bind(this->raw, (sockaddr*)&addr, sizeof(sockaddr_in)) == SOCKET_ERROR)
+	{
+		printf("Failed to bind UDP to port %i: %i\n", port, socket::getError());
+		closesocket(this->raw);
+		return;
+	}
+
+	getsockname(this->raw, (sockaddr*)&addr, &size);
+	
+	this->port = ntohs(addr.sin_port);
+	printf("Bound UDP to port %i (expected %i)\n", this->port, port);
+}
+
+void ae::net::UdpSocket::unbind()
+{
+	closesocket(this->raw);
+	this->raw = 0;
+	this->port = 0;
+}
+
+void ae::net::UdpSocket::send(socket::IpAddress ip, Packet p)
+{
+	if (this->raw == 0) return;
+
+	sockaddr_in addr;
+	i32 size = sizeof(sockaddr_in);
+	memset(&addr, 0, size);
+	addr.sin_family = AF_INET;
+	addr.sin_addr.S_un.S_addr = inet_addr(ip.first.c_str());
+	addr.sin_port = htons(ip.second);
+
+	i32 result = sendto(
+		this->raw, (const char*)p.buf, p.len, 0,
+		(sockaddr*)&addr, size
+	);
+	
+	if (result == -1)
+	{
+		printf("UDP %llu: error %i\n", this->raw, socket::getError());
+	}
+	else if ((usize)result != p.len)
+	{
+		printf("UDP %llu: sent != length (%i/%i)\n", this->raw, result, p.len);
+	}
+}
+
+std::pair<ae::socket::IpAddress, ae::net::Packet>
+	ae::net::UdpSocket::recv()
+{
+	sockaddr_in addr;
+	i32 size = sizeof(sockaddr_in);
+	memset(&addr, 0, size);
+	auto buffer = new u8[256];
+	auto len = recvfrom(
+		this->raw, (char*)buffer, 256, 0,
+		(sockaddr*)&addr, &size
+	);
+
+	if (len == -1)
+	{
+		auto status = socket::getError();
+		if (
+			status != WSAETIMEDOUT &&
+			status != WSAEINTR
+		) { printf("UDP error: %i\n", socket::getError()); }
+		return { socket::IpAddress { "", 0 }, Packet { nullptr, 0 } };
+	}
+
+	return {
+		socket::IpAddress
+		{
+			inet_ntoa(addr.sin_addr),
+			ntohs(addr.sin_port)
+		},
+		Packet { buffer, (usize)len }
+	};
+}
+
+void ae::net::UdpSocket::setBroadcast(bool active)
+{
+	if (this->raw == 0) return;
+	char enable = active ? '1' : '0';
+	printf("setBroadcast: %i\n", setsockopt(this->raw, SOL_SOCKET,
+		SO_BROADCAST, &enable, 1
+	));
+}
+
+void ae::net::UdpSocket::setTimeout(float send, float recv)
+{
+	if (this->raw == 0) return;
+	send *= 1000; recv *= 1000;
+	timeval s, r;
+	s.tv_sec = floor(send); s.tv_usec = (i32)((send - s.tv_sec) * 1e6);
+	r.tv_sec = floor(recv); r.tv_usec = (i32)((recv - r.tv_sec) * 1e6);
+	printf("setRecvTimeout: %i\n", setsockopt(
+		this->raw, SOL_SOCKET, SO_RCVTIMEO,
+		(char*)&r, sizeof(timeval)
+	));
+	printf("setSendTimeout: %i\n", setsockopt(
+		this->raw, SOL_SOCKET, SO_SNDTIMEO,
+		(char*)&s, sizeof(timeval)
+	));
+}
+
+ae::socket::Socket ae::net::UdpSocket::getSocket() { return this->raw; }
+ae::u16 ae::net::UdpSocket::getPort() { return this->port; }
+
+void ae::net::UdpSocket::init()
+{
+	if (this->raw != 0) { closesocket(this->raw); }
+
+	this->raw = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (this->raw == INVALID_SOCKET)
+	{
+		printf("Failed to create socket: %i\n",
+			socket::getError()
+		);
+		this->raw = 0;
+	}
 	this->port = 0;
 }
