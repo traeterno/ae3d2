@@ -192,7 +192,8 @@ function execute(b: string)
 	elseif id == "conn_custom" and event == 2 then
 		local status = aeNetwork.status()
 		if status == aeMath.networkStatus["Connected"] then
-			-- TODO
+			aeWindow.loadUI("hud")
+			aeWorld.load("testingGrounds")
 		else
 			input[1].active = true
 			input[1]:reset()

@@ -149,8 +149,11 @@ void ae::mesh::Mesh::render(f32 dt, glm::mat3 rotation, glm::mat4 ts)
 	if (this->sk != nullptr) this->sk->update(dt, this->cam);
 	this->cam->bindMeshVAO();
 	this->cam->bindTexture(this->texture);
-	this->cam->shaderMat3("rotation", rotation);
-	this->cam->shaderSetModel(ts);
+	if (!(rotation == glm::mat3(0.0) && ts == glm::mat4(1.0)))
+	{
+		this->cam->shaderMat3("rotation", rotation);
+		this->cam->shaderSetModel(ts);
+	}
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
 	glVertexAttribPointer(
@@ -213,17 +216,9 @@ std::pair<std::string, ae::anim::Animation>
 	return {anim->name, a};
 }
 
-ae::mesh::Bone::Bone()
+ae::mesh::Bone::Bone(ae::mesh::Skeleton* s, gltf::GLTF* file, u16 nodeID, u16* id)
 {
-	this->children = {};
-	this->angle = glm::mat3(1.0);
-	this->translation = glm::mat4(1.0);
-	this->length = 1.0;
-	this->id = u16max;
-}
-
-ae::mesh::Bone::Bone(gltf::GLTF* file, u16 nodeID, u16* id)
-{
+	this->sk = s;
 	auto n = &file->nodes[nodeID];
 	
 	this->name = n->name;
@@ -240,7 +235,7 @@ ae::mesh::Bone::Bone(gltf::GLTF* file, u16 nodeID, u16* id)
 
 	for (u16 i: n->children)
 	{
-		this->children.push_back(Bone(file, i, id));
+		this->children.push_back(Bone(this->sk, file, i, id));
 	}
 }
 
@@ -272,6 +267,22 @@ void ae::mesh::Bone::render(glm::mat4* ts, f32* pts, u16* counter)
 
 ae::u16 ae::mesh::Bone::getID() { return this->id; }
 ae::f32 ae::mesh::Bone::getLength() { return this->length; }
+
+ae::mesh::Bone* ae::mesh::Bone::getBone(std::string path)
+{
+	auto x = path.find("/");
+	printf("Current bone: %s\n", this->name.c_str());
+	if (x == std::string::npos && this->name == path) { return this; }
+	if (this->name != path.substr(0, x)) return nullptr;
+	for (auto& b: this->children)
+	{
+		auto ptr = b.getBone(path.substr(x + 1));
+		if (ptr != nullptr) return ptr;
+	}
+	return 0;
+}
+
+glm::mat4 ae::mesh::Bone::getTS() { return this->sk->getBoneTransform(this->id); }
 
 ae::mesh::Skeleton::Skeleton()
 {
@@ -318,7 +329,7 @@ void ae::mesh::Skeleton::load(gltf::GLTF* file, u8 id)
 	u16 counter = 0;
 	for (usize i = 0; i < this->bonesCount; i++)
 	{
-		if (!inherit[i]) this->bones.push_back(Bone(file, i, &counter));
+		if (!inherit[i]) this->bones.push_back(Bone(this, file, i, &counter));
 	}
 	delete[] inherit;
 
@@ -442,4 +453,16 @@ void ae::mesh::Skeleton::stopAnimation(std::string name)
 			this->currentAnim.pop_back();
 		}
 	}
+}
+
+glm::mat4 ae::mesh::Skeleton::getBoneTransform(u16 id) { return this->ts[id]; }
+
+ae::mesh::Bone* ae::mesh::Skeleton::getBone(std::string path)
+{
+	for (auto& b: this->bones)
+	{
+		auto ptr = b.getBone(path);
+		if (ptr != nullptr) return ptr;
+	}
+	return nullptr;
 }

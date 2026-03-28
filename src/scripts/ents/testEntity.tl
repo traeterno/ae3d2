@@ -5,8 +5,9 @@ local cam: Camera
 local ts: aeMath.Transform
 local distance: number
 local camHeight: number
-local ready: boolean
 local active: boolean
+
+local handBone: integer
 
 local getInput: function(): aeMath.Vec3
 
@@ -17,16 +18,15 @@ global function Init()
 
 	distance = 2.5
 	camHeight = 1.25
-	ready = false
 	active = false
 
-	aeEntity.startAnimation("Summon")
+	aeEntity.startAnimation("IdleUpper")
 	aeEntity.startAnimation("IdleLower")
 
 	cam = Camera.new()
 	cam.distance = 2.5
 	cam.orientation.y = -30
-	cam.orientation.x = 45
+	cam.orientation.x = 180
 	cam:apply()
 
 	ts = aeMath.Transform.new()
@@ -34,25 +34,26 @@ global function Init()
 	ts.pos.z = 0.55
 	cam:follow(ts.pos, camHeight)
 	aeCamera.mouseDelta()
+
+	handBone = 0
 end
 
 global function Update()
-	if not ready then
-		if aeNetwork.isReady() then
-			ready = true
-			aeEntity.stopAnimation("Summon")
-			aeEntity.startAnimation("IdleUpper")
-			cam.orientation.x = 180
-			cam:apply()
-		end
-		return
+	if handBone == 0 then
+		handBone = aeEntity.getBone(
+			"Root/Handler/Torso/Chest/Shoulder.R/Arm.R/Forearm.R/Hand.R/Fingers.R"
+		)
+		aeWorld.entExecute("sword", "SetBone", {handBone})
 	end
 
 	if aeWindow.keyJustPressed("Tab") then
 		active = not active
 		if active then aeCamera.mouseDelta() end
 	end
-	if not active then return end
+	if not active then
+		aeWorld.entExecute("sword", "SetBearer", {ts})
+		return
+	end
 
 	local dt = aeWindow.dt()
 	cam:rotate()
@@ -68,6 +69,7 @@ global function Update()
 	ts.pos.x = ts.pos.x - math.sin(math.rad(angle)) * 0.05
 	ts.pos.z = ts.pos.z - math.cos(math.rad(angle)) * 0.05
 	cam:follow(ts.pos, camHeight)
+	aeWorld.entExecute("sword", "SetBearer", {ts})
 end
 
 global function Draw()

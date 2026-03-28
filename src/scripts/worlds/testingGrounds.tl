@@ -4,9 +4,11 @@ global function Init()
 	aeWindow.clearColor(aeMath.Vec3.new(0.1, 0.2, 0.3))
 	aeWorld.spawn("test", "testEntity")
 	aeWorld.spawn("checkpoint", "checkpoint")
+	aeWorld.spawn("sword", "sword")
 
 	aeCamera.shaderUse("mesh")
 	aeCamera.shaderInt("lightsCount", 4)
+	aeCamera.shaderFloat("texGrade", 0)
 
 	aeCamera.shaderVec3("lightDir[0]", aeMath.Vec3.new(-1, -1, -1))
 	aeCamera.shaderVec3("lightClr[0]", aeMath.Vec3.new(0.25, 0.25, 0.25))
@@ -19,9 +21,12 @@ global function Init()
 	
 	aeCamera.shaderVec3("lightDir[3]", aeMath.Vec3.new(-1, -1, 1))
 	aeCamera.shaderVec3("lightClr[3]", aeMath.Vec3.new(0.25, 0.25, 0.25))
-
-	aeNetwork.connect("127.0.0.1", 26225)
 end
 
 global function Update()
+	if aeWindow.keyJustPressed("F1") then
+		aeCamera.clearCache()
+		aeWindow.loadUI("hud")
+		aeWorld.load("testingGrounds")
+	end
 end

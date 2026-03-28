@@ -157,6 +157,10 @@ void quat_lua(lua_State* script, glm::vec3 v, bool g)
 
 std::pair<glm::mat3, glm::mat4> lua_ts(lua_State* script)
 {
+	if (lua_isnil(script, -1))
+	{
+		return {glm::mat3(0.0), glm::mat4(1.0)};
+	}
 	lua_getfield(script, -1, "pos");
 	auto pos = lua_vec3(script);
 	lua_getfield(script, -1, "origin");
@@ -650,19 +654,42 @@ LUA(entity_drawSkeleton)
 
 LUA(entity_startAnimation)
 {
+	const char* anim = lua_tostring(script, -1);
 	auto sk = getEntity(script)->getMesh()->getSkeleton();
 	if (sk == nullptr) return 0;
-	const char* anim = lua_tostring(script, -3);
 	sk->startAnimation(anim);
 	return 0;
 }
 
 LUA(entity_stopAnimation)
 {
+	const char* anim = lua_tostring(script, -1);
 	auto sk = getEntity(script)->getMesh()->getSkeleton();
 	if (sk == nullptr) return 0;
-	const char* anim = lua_tostring(script, -3);
 	sk->stopAnimation(anim);
+	return 0;
+}
+
+LUA(entity_getBone)
+{
+	std::string path = lua_tostring(script, -1);
+	lua_pushinteger(script,
+		(uintptr_t)getEntity(script)->getMesh()->getSkeleton()->getBone(path)
+	);
+	return 1;
+}
+
+LUA(entity_useBoneTS)
+{
+	auto [_, offset] = lua_ts(script);
+	auto [_, bearer] = lua_ts(script);
+	auto bone = (mesh::Bone*)lua_tointeger(script, -1);
+	auto boneTS = bone->getTS();
+	auto cam = getWindow(script)->getCamera();
+	cam->shaderUse("mesh");
+	glm::mat4 ts = bearer * boneTS * offset;
+	cam->shaderSetModel(ts);
+	cam->shaderMat3("rotation", glm::mat3(ts));
 	return 0;
 }
 
@@ -674,6 +701,8 @@ void ae::bind::entity(lua_State* script)
 	insertFunction(script, "drawSkeleton", ae_entity_drawSkeleton);
 	insertFunction(script, "startAnimation", ae_entity_startAnimation);
 	insertFunction(script, "stopAnimation", ae_entity_stopAnimation);
+	insertFunction(script, "getBone", ae_entity_getBone);
+	insertFunction(script, "useBoneTS", ae_entity_useBoneTS);
 	lua_setglobal(script, "aeEntity");
 }
 

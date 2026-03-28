@@ -41,16 +41,19 @@ std::pair<std::string, Animation> loadAnimation(gltf::GLTF* file, u8 id);
 namespace ae::mesh
 {
 
+class Skeleton;
+
 class Bone
 {
 public:
-	Bone();
-	Bone(gltf::GLTF* file, u16 nodeID, u16* id);
+	Bone(Skeleton* sk, gltf::GLTF* file, u16 nodeID, u16* id);
 	~Bone();
 	void update(glm::mat4* ts, glm::mat3* f, glm::mat4 pts);
 	u16 getID();
 	f32 getLength();
 	void render(glm::mat4* ts, f32* pts, u16* counter);
+	Bone* getBone(std::string path);
+	glm::mat4 getTS();
 private:
 	u16 nodeID, id;
 	std::string name;
@@ -58,6 +61,7 @@ private:
 	glm::mat3 angle;
 	glm::mat4 translation;
 	f32 length;
+	Skeleton* sk;
 };
 
 class Skeleton
@@ -70,6 +74,8 @@ public:
 	void render(ae::Camera* cam, glm::mat4 ts);
 	void startAnimation(std::string name);
 	void stopAnimation(std::string name);
+	glm::mat4 getBoneTransform(u16 id);
+	Bone* getBone(std::string path);
 private:
 	glm::mat4* inverseBindMatrices;
 	glm::mat4* ts;

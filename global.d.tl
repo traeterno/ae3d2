@@ -56,6 +56,8 @@ global record aeEntity
 	drawSkeleton: function(aeMath.Transform)
 	startAnimation: function(string)
 	stopAnimation: function(string)
+	getBone: function(string): integer
+	useBoneTS: function(integer, aeMath.Transform, aeMath.Transform)
 end
 
 global record aeNetwork
