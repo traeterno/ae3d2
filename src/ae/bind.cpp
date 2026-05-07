@@ -1,3 +1,4 @@
+#include "ae/gltf.hpp"
 #include <glad/glad.h>
 #include <ae/bind.hpp>
 #include <ae/window.hpp>
@@ -30,6 +31,14 @@ void ae::bind::setup(lua_State* script, Window* win, const char* executor)
 	lua_settable(script, -3);
 
 	lua_settop(script, 0);
+}
+
+std::string getExecutor(lua_State* script)
+{
+	lua_getglobal(script, "_executor");
+	std::string exec = lua_tostring(script, -1);
+	lua_pop(script, 1);
+	return exec;
 }
 
 ae::Window* getWindow(lua_State* script)
@@ -159,6 +168,7 @@ std::pair<glm::mat3, glm::mat4> lua_ts(lua_State* script)
 {
 	if (lua_isnil(script, -1))
 	{
+		lua_pop(script, 1);
 		return {glm::mat3(0.0), glm::mat4(1.0)};
 	}
 	lua_getfield(script, -1, "pos");
@@ -216,6 +226,34 @@ void transferTable(lua_State* l1, lua_State* l2)
 		lua_settable(l2, -3);
 		lua_pop(l1, 1);
 	}
+}
+
+json lua_json(lua_State* l)
+{
+	json obj;
+	lua_pushnil(l);
+	while (lua_next(l, -2))
+	{
+		u32 index = u32max;
+		std::string name = "";
+		json value = json::value_t::null;
+
+		lua_pushvalue(l, -2);
+		if (lua_isinteger(l, -1)) index = lua_tointeger(l, -1);
+		else name = lua_tostring(l, -1);
+		lua_pop(l, 1);
+
+		if (lua_istable(l, -1)) value = lua_json(l);
+		else if (lua_isboolean(l, -1)) value = (lua_toboolean(l, -1) == 1);
+		else if (lua_isinteger(l, -1)) value = lua_tointeger(l, -1);
+		else if (lua_isnumber(l, -1)) value = lua_tonumber(l, -1);
+		else if (lua_isstring(l, -1)) value = lua_tostring(l, -1);
+
+		if (index != u32max) obj[index - 1] = value;
+		else obj[name] = value;
+		lua_pop(l, 1);
+	}
+	return obj;
 }
 
 LUA(window_close)
@@ -422,17 +460,17 @@ LUA(camera_clearCache)
 	return 0;
 }
 
-LUA(camera_createVBO)
+LUA(camera_createBuffer)
 {
-	auto vbo = getWindow(script)->getCamera()->createVBO();
+	auto vbo = getWindow(script)->getCamera()->createBuffer();
 	lua_pushnumber(script, vbo);
 	return 1;
 }
 
-LUA(camera_removeVBO)
+LUA(camera_removeBuffer)
 {
 	u32 vbo = lua_tonumber(script, -1);
-	getWindow(script)->getCamera()->removeVBO(vbo);
+	getWindow(script)->getCamera()->removeBuffer(vbo);
 	return 0;
 }
 
@@ -538,6 +576,30 @@ LUA(camera_genVBO)
 	glBufferData(GL_ARRAY_BUFFER,
 		count * sizeof(f32), data, GL_STATIC_DRAW
 	);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	delete[] data;
+	return 0;
+}
+
+LUA(camera_genEBO)
+{
+	u32 count = lua_rawlen(script, -1);
+	auto data = new u16[count];
+	for (u32 i = 0; i < count; i++)
+	{
+		lua_pushinteger(script, i + 1);
+		lua_gettable(script, -2);
+		data[i] = lua_tonumber(script, -1);
+		lua_pop(script, 1);
+	}
+	lua_pop(script, 1);
+	u32 id = lua_tointeger(script, -1);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+		count * sizeof(u16), data, GL_STATIC_DRAW
+	);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	delete[] data;
 	return 0;
 }
 
@@ -546,6 +608,119 @@ LUA(camera_applyTransform)
 	auto [rot, ts] = lua_ts(script);
 	auto vec = lua_vec4(script);
 	vec4_lua(script, ts * vec);
+	return 1;
+}
+
+LUA(camera_render)
+{
+	auto [rot, ts] = lua_ts(script);
+	auto cfg = lua_json(script);
+	std::vector<std::pair<f32, u32>> textures;
+	for (auto x : cfg["textures"])
+	{
+		textures.push_back({x[1], x[0]});
+	}
+	RenderTask rt {
+		.vbo = cfg["vbo"],
+		.ebo = cfg["ebo"],
+		.shapeMode = cfg["shapeMode"],
+		.attrSize = {
+			cfg["attr"][0], cfg["attr"][1],
+			cfg["attr"][2], cfg["attr"][3]
+		},
+		.shader = cfg["shader"],
+		.textures = textures,
+		.rotation = { cfg["useRotation"], rot },
+		.ts = { cfg["useTS"], ts },
+		.indices = cfg["indices"],
+		.useSkeleton = cfg["useSkeleton"]
+	};
+	getWindow(script)->getCamera()->render(&rt, script);
+	return 0;
+}
+
+void vF32_lua(lua_State* l, std::vector<f32> v)
+{
+	lua_createtable(l, v.size(), 0);
+	for (usize i = 0; i < v.size(); i++)
+	{
+		lua_pushinteger(l, i + 1);
+		lua_pushnumber(l, v[i]);
+		lua_settable(l, -3);
+	}
+}
+
+void vU8_lua(lua_State* l, std::vector<u8> v)
+{
+	lua_createtable(l, v.size(), 0);
+	for (usize i = 0; i < v.size(); i++)
+	{
+		lua_pushinteger(l, i + 1);
+		lua_pushinteger(l, v[i]);
+		lua_settable(l, -3);
+	}
+}
+
+void vU16_lua(lua_State* l, std::vector<u16> v)
+{
+	lua_createtable(l, v.size(), 0);
+	for (usize i = 0; i < v.size(); i++)
+	{
+		lua_pushinteger(l, i + 1);
+		lua_pushinteger(l, v[i]);
+		lua_settable(l, -3);
+	}
+}
+
+LUA(camera_getGLTF)
+{
+	std::string node = lua_tostring(script, -1);
+	std::string scene = lua_tostring(script, -2);
+	lua_pop(script, 2);
+	auto g = getWindow(script)->getCamera()->getGLTF(scene.c_str());
+	auto info = gltf::getMesh(g, node.c_str());
+	lua_createtable(script, 0, 0);
+	if (info.pos.size() != 0)
+	{
+		lua_pushstring(script, "pos");
+		vF32_lua(script, info.pos);
+		lua_settable(script, -3);
+	}
+	if (info.normals.size() != 0)
+	{
+		lua_pushstring(script, "normals");
+		vF32_lua(script, info.normals);
+		lua_settable(script, -3);
+	}
+	if (info.uvs.size() != 0)
+	{
+		lua_pushstring(script, "uv");
+		vF32_lua(script, info.uvs);
+		lua_settable(script, -3);
+	}
+	if (info.joints.size() != 0)
+	{
+		lua_pushstring(script, "joints");
+		vU8_lua(script, info.joints);
+		lua_settable(script, -3);
+	}
+	if (info.indices.size() != 0)
+	{
+		lua_pushstring(script, "indices");
+		vU16_lua(script, info.indices);
+		lua_settable(script, -3);
+	}
+	lua_pushstring(script, "skeleton");
+	lua_pushinteger(script, info.skeleton);
+	lua_settable(script, -3);
+	return 1;
+}
+
+LUA(camera_getTexture)
+{
+	auto id = lua_tostring(script, -1);
+	auto t = getWindow(script)->getCamera()->getTexture(id);;
+	lua_pushinteger(script, t.id);
 	return 1;
 }
 
@@ -562,8 +737,8 @@ void ae::bind::camera(lua_State* script)
 	insertFunction(script, "shaderVec4", ae_camera_shaderVec4);
 	insertFunction(script, "drawSprite", ae_camera_drawSprite);
 	insertFunction(script, "clearCache", ae_camera_clearCache);
-	insertFunction(script, "createVBO", ae_camera_createVBO);
-	insertFunction(script, "removeVBO", ae_camera_removeVBO);
+	insertFunction(script, "createBuffer", ae_camera_createBuffer);
+	insertFunction(script, "removeBuffer", ae_camera_removeBuffer);
 	insertFunction(script, "buildText", ae_camera_buildText);
 	insertFunction(script, "drawText", ae_camera_drawText);
 	insertFunction(script, "mouseDelta", ae_camera_mouseDelta);
@@ -573,7 +748,12 @@ void ae::bind::camera(lua_State* script)
 	insertFunction(script, "unloadGLTF", ae_camera_unloadGLTF);
 	insertFunction(script, "drawShape", ae_camera_drawShape);
 	insertFunction(script, "genVBO", ae_camera_genVBO);
+	insertFunction(script, "genEBO", ae_camera_genEBO);
 	insertFunction(script, "applyTransform", ae_camera_applyTransform);
+
+	insertFunction(script, "render", ae_camera_render);
+	insertFunction(script, "getGLTF", ae_camera_getGLTF);
+	insertFunction(script, "getTexture", ae_camera_getTexture);
 	lua_setglobal(script, "aeCamera");
 }
 
@@ -681,15 +861,40 @@ LUA(entity_getBone)
 
 LUA(entity_useBoneTS)
 {
-	auto [_, offset] = lua_ts(script);
-	auto [_, bearer] = lua_ts(script);
+	auto offset = lua_ts(script);
+	auto bearer = lua_ts(script);
 	auto bone = (mesh::Bone*)lua_tointeger(script, -1);
 	auto boneTS = bone->getTS();
 	auto cam = getWindow(script)->getCamera();
 	cam->shaderUse("mesh");
-	glm::mat4 ts = bearer * boneTS * offset;
+	glm::mat4 ts = bearer.second * boneTS * offset.second;
 	cam->shaderSetModel(ts);
 	cam->shaderMat3("rotation", glm::mat3(ts));
+	return 0;
+}
+
+LUA(entity_loadSkeleton)
+{
+	u8 id = lua_tointeger(script, -1);
+	std::string scene = lua_tostring(script, -2);
+	auto g = getWindow(script)->getCamera()->getGLTF(scene.c_str());
+	auto s = new mesh::Skeleton;
+	s->load(g, id);
+	getWindow(script)->getWorld()->setSkeleton(getExecutor(script).c_str(), s);
+	return 0;
+}
+
+LUA(entity_startAnim)
+{
+	getWindow(script)->getWorld()->getSkeleton(getExecutor(script).c_str())
+		->startAnimation(lua_tostring(script, -1));
+	return 0;
+}
+
+LUA(entity_stopAnim)
+{
+	getWindow(script)->getWorld()->getSkeleton(getExecutor(script).c_str())
+		->stopAnimation(lua_tostring(script, -1));
 	return 0;
 }
 
@@ -703,6 +908,10 @@ void ae::bind::entity(lua_State* script)
 	insertFunction(script, "stopAnimation", ae_entity_stopAnimation);
 	insertFunction(script, "getBone", ae_entity_getBone);
 	insertFunction(script, "useBoneTS", ae_entity_useBoneTS);
+
+	insertFunction(script, "loadSkeleton", ae_entity_loadSkeleton);
+	insertFunction(script, "startAnim", ae_entity_startAnim);
+	insertFunction(script, "stopAnimS", ae_entity_stopAnim);
 	lua_setglobal(script, "aeEntity");
 }
 

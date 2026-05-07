@@ -9,8 +9,8 @@
 ae::mesh::Mesh::Mesh(ae::Camera* camera)
 {
 	if (camera == nullptr) return;
-	this->vbo = camera->createVBO();
-	this->ebo = camera->createVBO();
+	this->vbo = camera->createBuffer();
+	this->ebo = camera->createBuffer();
 	this->cam = camera;
 	this->sk = nullptr;
 	this->texture = 0;
@@ -130,10 +130,90 @@ void ae::mesh::Mesh::load(ae::gltf::GLTF* file, const char* id)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, sampler->wrapT);
 }
 
+ae::gltf::MeshInfo ae::gltf::getMesh(GLTF *g, const char *id)
+{
+	ae::gltf::MeshInfo mi = {
+		{}, {}, {}, {}, {},
+		u8max
+	};
+
+	Node* n = nullptr;
+	for (auto& x: g->nodes) if (x.name == id) { n = &x; break; }
+	if (!n) { printf("Node %s not found\n", id); return mi; }
+	if (n->mesh == u8max)
+	{
+		printf("Node %s does not contain mesh\n", id);
+		return mi;
+	}
+	
+	auto m = &g->meshes[n->mesh];
+	printf("Node %s | Mesh %s\n", id, m->name.c_str());
+
+	mi.skeleton = n->skin;
+
+	if (m->indices != u16max)
+	{
+		auto ia = &g->accessors[m->indices];
+		auto ibv = &g->bufferViews[ia->bufferView];
+		auto ib = (u16*)&g->buffers[ibv->buffer]
+			.data[ibv->byteOffset];
+		for (usize i = 0; i < ibv->byteLength / sizeof(u16); i++)
+		{
+			mi.indices.push_back(ib[i]);
+		}
+	}
+	if (m->vertices != u16max)
+	{
+		auto va = &g->accessors[m->vertices];
+		auto vbv = &g->bufferViews[va->bufferView];
+		auto vb = (f32*)&g->buffers[vbv->buffer]
+			.data[vbv->byteOffset];
+		for (usize i = 0; i < vbv->byteLength / sizeof(f32); i++)
+		{
+			mi.pos.push_back(vb[i]);
+		}
+	}
+	if (m->normal != u16max)
+	{
+		auto na = &g->accessors[m->normal];
+		auto nbv = &g->bufferViews[na->bufferView];
+		auto nb = (f32*)&g->buffers[nbv->buffer]
+			.data[nbv->byteOffset];
+		for (usize i = 0; i < nbv->byteLength / sizeof(f32); i++)
+		{
+			mi.normals.push_back(nb[i]);
+		}
+	}
+	if (m->texCoord != u16max)
+	{
+		auto ta = &g->accessors[m->texCoord];
+		auto tbv = &g->bufferViews[ta->bufferView];
+		auto tb = (f32*)&g->buffers[tbv->buffer]
+			.data[tbv->byteOffset];
+		for (usize i = 0; i < tbv->byteLength / sizeof(f32); i++)
+		{
+			mi.uvs.push_back(tb[i]);
+		}
+	}
+	if (m->joints != u16max)
+	{
+		auto ja = &g->accessors[m->joints];
+		auto jbv = &g->bufferViews[ja->bufferView];
+		auto jb = (glm::u8vec4*)&g->buffers[jbv->buffer]
+			.data[jbv->byteOffset];
+		for (usize i = 0; i < jbv->byteLength / sizeof(glm::u8vec4); i++)
+		{
+			mi.joints.push_back(jb[i].x);
+		}
+	}
+	
+	return mi;
+}
+
 void ae::mesh::Mesh::destroy()
 {
-	this->cam->removeVBO(this->vbo);
-	this->cam->removeVBO(this->ebo);
+	this->cam->removeBuffer(this->vbo);
+	this->cam->removeBuffer(this->ebo);
 	glDeleteTextures(1, &this->texture);
 	if (this->sk != nullptr)
 	{

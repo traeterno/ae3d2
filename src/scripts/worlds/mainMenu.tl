@@ -5,6 +5,7 @@ local cam: Camera
 local timer: number
 
 global function Init()
+	aeWindow.clearColor(aeMath.Vec3.new(0.2, 0.2, 0.2))
 	aeWorld.spawn("cube", "cheatCube")
 	aeWorld.spawn("coordinates", "grid")
 

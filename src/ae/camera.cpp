@@ -1,6 +1,5 @@
 #include <glad/glad.h>
 
-#include <ae/camera.hpp>
 #include <ae/window.hpp>
 #include <ae/global.hpp>
 #include <ae/font.hpp>
@@ -113,15 +112,19 @@ bool Camera::init()
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
 	
 	glGenVertexArrays(1, &this->shapeVAO);
 	this->bindVAO(this->shapeVAO);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
 	
 	this->bindVAO(0);
 	printf("Initialized camera\n");
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	return true;
 }
 
@@ -192,6 +195,7 @@ void Camera::display()
 	this->shaderUse("offscreen");
 	this->bindVAO(this->offscreen.vao);
 	this->currentTexture = this->offscreen.tex;
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, this->offscreen.tex);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
@@ -251,7 +255,7 @@ text::Font* Camera::getFont()
 	return this->font;
 }
 
-u32 Camera::createVBO()
+u32 Camera::createBuffer()
 {
 	u32 vbo;
 	glGenBuffers(1, &vbo);
@@ -259,7 +263,7 @@ u32 Camera::createVBO()
 	return vbo;
 }
 
-void Camera::removeVBO(u32 id)
+void Camera::removeBuffer(u32 id)
 {
 	auto t = this->VBOs.find(id);
 	if (t != this->VBOs.end())
@@ -523,7 +527,7 @@ u32 loadShader(const char* name)
 	glGetProgramiv(program, GL_LINK_STATUS, &success);
 	if (!success)
 	{
-		glGetShaderInfoLog(fshader, 512, NULL, infoLog);
+		glGetProgramInfoLog(program, 512, NULL, infoLog);
 		printf("Failed to link shader %s: %s\n", name, infoLog);
 		glDeleteShader(vshader);
 		glDeleteShader(fshader);
@@ -562,4 +566,58 @@ Texture loadTexture(const char* name)
 	glBindTexture(GL_TEXTURE_2D, 0);
 	stbi_image_free(data);
 	return { id, (ae::u32)w, (ae::u32)h };
+}
+
+void Camera::render(RenderTask* rt, lua_State* l)
+{
+	this->bindVAO(this->shapeVAO);
+	this->shaderUse(rt->shader.c_str());
+	if (rt->rotation.first)
+	{
+		this->shaderMat3("rotation", rt->rotation.second);
+	}
+	if (rt->ts.first)
+	{
+		this->shaderSetModel(rt->ts.second);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, rt->vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rt->ebo);
+	i32 stride = (
+		rt->attrSize[0] + rt->attrSize[1] +
+		rt->attrSize[2] + rt->attrSize[3]
+	) * sizeof(f32);
+	uintptr_t pointer = 0;
+	for (u8 i = 0; i < 4; i++)
+	{
+		if (rt->attrSize[i] == 0) break;
+		glVertexAttribPointer(
+			i, rt->attrSize[i], GL_FLOAT,
+			GL_FALSE, stride, (void*)pointer
+		);
+		pointer += rt->attrSize[i] * sizeof(f32);
+	}
+	if (rt->textures.size() != 0) for (u8 i = 0; i < 4; i++)
+	{
+		f32 grade; u32 t;
+		if (rt->textures.size() <= i) { grade = 0.0; t = 0; }
+		else { grade = rt->textures[i].first; t = rt->textures[i].second; }
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, t);
+		this->shaderInt(ae::str::format("tex[%i]", i).c_str(), i);
+		this->shaderFloat(ae::str::format("texGrade[%i]", i).c_str(), grade);
+	}
+	if (rt->useSkeleton)
+	{
+		lua_getglobal(l, "_executor");
+		std::string name = lua_tostring(l, -1);
+		lua_pop(l, 1);
+		this->window->getWorld()->getSkeleton(name.c_str())->update(
+			this->window->getDeltaTime(),
+			this
+		);
+	}
+	glDrawElements(
+		rt->shapeMode, rt->indices,
+		GL_UNSIGNED_SHORT, nullptr
+	);
 }

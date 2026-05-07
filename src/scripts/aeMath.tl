@@ -116,16 +116,6 @@ local function HSV2RGB(h: number, s: number, v: number): Vec3
 	else return clr(c + m, m, x + m) end
 end
 
-local Shapes: { string : integer } = {
-	Points = 0,
-	Lines = 1,
-	LineLoop = 2,
-	LineStrip = 3,
-	Triangles = 4,
-	TriangleStrip = 5,
-	TriangleFan = 6
-}
-
 local function Lerp(a: number, b: number, t: number): number
 	return a * (1 - t) + b * t
 end
@@ -196,7 +186,6 @@ return {
 	cycle = Cycle,
 	rotationLerp = RotationLerp,
 	hsv2rgb = HSV2RGB,
-	shapes = Shapes,
 	lerp = Lerp,
 	contains = Contains,
 	easings = {

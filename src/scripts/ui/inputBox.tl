@@ -16,7 +16,7 @@ function InputBox.new(): InputBox
 	local self: InputBox = setmetatable({}, { __index = InputBox })
 	self.str = {}
 	self.txt = Text.new()
-	self.vbo = aeCamera.createVBO()
+	self.vbo = aeCamera.createBuffer()
 	self.ts = aeMath.Transform.new()
 	self.cursor = 1
 	self.active = false

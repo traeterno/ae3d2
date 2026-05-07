@@ -1,4 +1,5 @@
 local aeMath = require("aeMath")
+local aeMesh = require("aeMesh")
 
 global record aeWindow
 	close: function()
@@ -28,8 +29,8 @@ global record aeCamera
 	shaderVec4: function(string, aeMath.Vec4)
 	drawSprite: function(aeMath.Transform)
 	clearCache: function()
-	createVBO: function(): integer
-	removeVBO: function(integer)
+	createBuffer: function(): integer
+	removeBuffer: function(integer)
 	buildText: function(string, integer): integer, aeMath.Vec2
 	drawText: function(integer, integer, aeMath.Transform)
 	drawShape: function(integer, integer, integer, aeMath.Transform)
@@ -39,7 +40,12 @@ global record aeCamera
 	loadGLTF: function(string)
 	unloadGLTF: function(string)
 	genVBO: function(integer, { number })
+	genEBO: function(integer, { integer })
 	applyTransform: function(aeMath.Vec4, aeMath.Transform): aeMath.Vec4
+
+	render: function(aeMesh.RenderTask, aeMath.Transform)
+	getGLTF: function(string, string): aeMesh.GLTF
+	getTexture: function(string): integer
 end
 
 
@@ -58,6 +64,10 @@ global record aeEntity
 	stopAnimation: function(string)
 	getBone: function(string): integer
 	useBoneTS: function(integer, aeMath.Transform, aeMath.Transform)
+
+	loadSkeleton: function(string, integer)
+	startAnim: function(string)
+	stopAnim: function(string)
 end
 
 global record aeNetwork

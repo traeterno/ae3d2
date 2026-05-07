@@ -45,8 +45,12 @@ public:
 	void requestReload(const char* name);
 	void spawn(const char* id, const char* path);
 	lua_State* getScript();
+	void setSkeleton(const char* id, mesh::Skeleton* sk);
+	mesh::Skeleton* getSkeleton(const char* id);
+	void destroySkeleton(const char* id);
 private:
 	std::unordered_map<std::string, Entity*> ents;
+	std::unordered_map<std::string, mesh::Skeleton*> skeletons;
 	lua_State* state;
 	std::string reload;
 	Window* window;

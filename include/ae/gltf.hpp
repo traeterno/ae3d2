@@ -141,6 +141,18 @@ struct GLTF
 GLTF* load(const char* id);
 f32 applyInterpolation(Interpolation ip, f32 t);
 
+struct MeshInfo
+{
+	std::vector<f32> pos;
+	std::vector<f32> normals;
+	std::vector<f32> uvs;
+	std::vector<u8> joints;
+	std::vector<u16> indices;
+	u8 skeleton;
+};
+
+MeshInfo getMesh(GLTF* g, const char* id);
+
 };
 
 #endif

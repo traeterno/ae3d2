@@ -14,7 +14,7 @@ end
 
 function Text.new(): Text
 	local self: Text = setmetatable({}, { __index = Text })
-	self.id = aeCamera.createVBO()
+	self.id = aeCamera.createBuffer()
 	self.len = 0
 	self.str = ""
 	self.ts = Transform.new()

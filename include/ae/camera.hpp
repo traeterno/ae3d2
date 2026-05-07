@@ -7,6 +7,8 @@
 #include <ae/types.hpp>
 #include <glm/glm.hpp>
 
+struct lua_State;
+
 namespace ae
 {
 
@@ -18,6 +20,28 @@ struct Offscreen { u32 fbo, tex, depth, vao; };
 
 namespace text { class Font; }
 namespace gltf { struct GLTF; }
+
+enum class VertexMode
+{
+	None = 0,
+	Float = 1,
+	Vec2 = 2,
+	Vec3 = 3,
+	Vec4 = 4
+};
+
+struct RenderTask
+{
+	u32 vbo, ebo;
+	u8 shapeMode;
+	u8 attrSize[4];
+	std::string shader;
+	std::vector<std::pair<f32, u32>> textures;
+	std::pair<bool, glm::mat3> rotation;
+	std::pair<bool, glm::mat4> ts;
+	u32 indices;
+	bool useSkeleton;
+};
 
 class Camera
 {
@@ -35,8 +59,8 @@ public:
 	void bindTexture(u32 id);
 	void useProjection(bool perspective);
 	void useView(bool camera);
-	u32 createVBO();
-	void removeVBO(u32 id);
+	u32 createBuffer();
+	void removeBuffer(u32 id);
 	Texture getTexture(const char* id);
 	void setFont(const char* name);
 	text::Font* getFont();
@@ -62,6 +86,8 @@ public:
 	void shaderFloat(const char* uniform, f32 value);
 	void shaderSetModel(glm::mat4 model);
 	i32 shaderGetPos(const char* uniform);
+
+	void render(RenderTask* rt, lua_State* l);
 private:
 	std::unordered_map<std::string, Texture> textures;
 	std::unordered_map<std::string, u32> shaders;

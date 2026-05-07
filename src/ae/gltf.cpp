@@ -1,8 +1,8 @@
-#include <ae/gltf.hpp>
 #include <ae/global.hpp>
-#include <nlohmann/json.hpp>
-
+#include <ae/gltf.hpp>
 using namespace ae::gltf;
+
+#include <nlohmann/json.hpp>
 
 GLTF* ae::gltf::load(const char* id)
 {
@@ -108,12 +108,12 @@ GLTF* ae::gltf::load(const char* id)
 		auto a = p["attributes"];
 		f->meshes.push_back({
 			.name = x["name"],
-			.vertices = a["POSITION"],
-			.normal = a["NORMAL"],
+			.vertices = a["POSITION"].is_null() ? u16max : (u16)a["POSITION"],
+			.normal = a["NORMAL"].is_null() ? u16max : (u16)a["NORMAL"],
 			.texCoord = a["TEXCOORD_0"].is_null() ? u16max : (u16)a["TEXCOORD_0"],
 			.joints = a["JOINTS_0"].is_null() ? u16max : (u16)a["JOINTS_0"],
 			.weights = a["WEIGHTS_0"].is_null() ? u16max : (u16)a["WEIGHTS_0"],
-			.indices = p["indices"],
+			.indices = p["indices"].is_null() ? u16max : (u16)p["indices"],
 			.material = p["material"].is_null() ? u8max : (u8)p["material"]
 		});
 	}

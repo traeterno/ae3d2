@@ -1,10 +1,31 @@
 local aeMath = require("aeMath")
 
+--[[
+	TODO
+
+	0.
+	rendering update:
+	move all the drawing to new model
+
+	1.
+	add proper lighting system:
+	in this script add function {Enable/Disable}Lighting(shaderName),
+	which will register the shader for updating the uniforms
+	when lights have been updated.
+
+	2.
+	custom shaders for heroes:
+	when using textures, points with color (0xFFFFFF) will be filled with accent color
+	(can be set up)
+]]
+
 global function Init()
 	aeWindow.clearColor(aeMath.Vec3.new(0.1, 0.2, 0.3))
+	aeWorld.spawn("sky", "sky")
 	aeWorld.spawn("test", "testEntity")
 	aeWorld.spawn("checkpoint", "checkpoint")
 	aeWorld.spawn("sword", "sword")
+	aeWorld.spawn("p1", "hero")
 
 	aeCamera.shaderUse("mesh")
 	aeCamera.shaderInt("lightsCount", 4)

@@ -1,5 +1,7 @@
 local aeMath = require("aeMath")
+local aeMesh = require("aeMesh")
 
+local render: aeMesh.RenderTask
 local transform: aeMath.Transform
 local state: string
 local transition: number
@@ -10,8 +12,44 @@ local sets: thread ; local setsFN: function()
 local exit: thread ; local exitFN: function()
 
 global function Init()
-	aeCamera.loadGLTF("cheatCube")
-	aeEntity.loadMesh("cheatCube", "CubeV2")
+	local data = aeCamera.getGLTF("cheatCube", "CubeV2")
+	render = aeMesh.RenderTask.default()
+	render.vbo = aeCamera.createBuffer()
+	render.ebo = aeCamera.createBuffer()
+	render.attr = { 4, 3, 2, 0 }
+	render.shader = "mesh2"
+	render.useSkeleton = true
+	-- render.textures = { aeCamera.getTexture("meshes/cheatCube") }
+	render.textures = {
+		{ aeCamera.getTexture("meshes/cheatCube"), 1 }
+	}
+	render.indices = #data.indices
+
+	local vbo: {number} = {}
+	local p = data.pos as {number} or {}
+	local n = data.normals as {number} or {}
+	local t = data.uv as {number} or {}
+	local j = data.joints as {integer} or {}
+
+	for i = 0, math.floor(#p / 3) do
+		vbo[i*9+1] = p[i*3+1]
+		vbo[i*9+2] = p[i*3+2]
+		vbo[i*9+3] = p[i*3+3]
+		vbo[i*9+4] = j[i+1]
+		vbo[i*9+5] = n[i*3+1]
+		vbo[i*9+6] = n[i*3+2]
+		vbo[i*9+7] = n[i*3+3]
+		vbo[i*9+8] = t[i*2+1]
+		vbo[i*9+9] = t[i*2+2]
+	end
+
+	aeCamera.genVBO(render.vbo, vbo)
+	aeCamera.genEBO(render.ebo, data.indices)
+
+	aeEntity.loadSkeleton("cheatCube", data.skeleton)
+
+	-- aeCamera.loadGLTF("cheatCube")
+	-- aeEntity.loadMesh("cheatCube", "CubeV2")
 
 	transform = aeMath.Transform.new()
 	state = "Idle"
@@ -37,12 +75,14 @@ global function Update()
 end
 
 global function Draw()
-	aeCamera.shaderUse("mesh")
-	if state == "Exit" then aeCamera.textureUse(1, "meshes/cheatCube/exit")
-	elseif state == "Settings" then aeCamera.textureUse(1, "meshes/cheatCube/settings")
-	elseif state == "Connect" then aeCamera.textureUse(1, "meshes/cheatCube/connect") end
-	aeCamera.shaderInt("tex2", 1)
-	aeEntity.draw(transform)
+	aeCamera.render(render, transform)
+
+	-- aeCamera.shaderUse("mesh")
+	-- if state == "Exit" then aeCamera.textureUse(1, "meshes/cheatCube/exit")
+	-- elseif state == "Settings" then aeCamera.textureUse(1, "meshes/cheatCube/settings")
+	-- elseif state == "Connect" then aeCamera.textureUse(1, "meshes/cheatCube/connect") end
+	-- aeCamera.shaderInt("tex2", 1)
+	-- aeEntity.draw(transform)
 end
 
 global function SetState(data: table)
@@ -79,8 +119,8 @@ function idleFN()
 			transition = aeMath.clamp(transition + aeWindow.dt(), 0, 1)
 			local t = aeMath.easings.cubicInOut(transition)
 
-			aeCamera.shaderUse("mesh")
-			aeCamera.shaderFloat("texGrade", 1 - t)
+			-- aeCamera.shaderUse("mesh")
+			-- aeCamera.shaderFloat("texGrade", 1 - t)
 			targetTS.angle.yaw = aeMath.lerp(transitionTS.angle.yaw, targetAngle.yaw, t)
 			targetTS.angle.pitch = aeMath.lerp(transitionTS.angle.pitch, targetAngle.pitch, t)
 			targetTS.angle.roll = aeMath.lerp(transitionTS.angle.roll, targetAngle.roll, t)
@@ -102,8 +142,8 @@ function setsFN()
 			transition = aeMath.clamp(transition + aeWindow.dt(), 0, 1)
 			local t = aeMath.easings.cubicInOut(transition)
 
-			aeCamera.shaderUse("mesh")
-			aeCamera.shaderFloat("texGrade", t)
+			-- aeCamera.shaderUse("mesh")
+			-- aeCamera.shaderFloat("texGrade", t)
 			targetTS.angle.yaw = aeMath.lerp(transitionTS.angle.yaw, targetAngle.yaw, t)
 			targetTS.angle.pitch = aeMath.lerp(transitionTS.angle.pitch, targetAngle.pitch, t)
 			targetTS.angle.roll = aeMath.lerp(transitionTS.angle.roll, targetAngle.roll, t)
@@ -125,8 +165,8 @@ function exitFN()
 			transition = aeMath.clamp(transition + aeWindow.dt(), 0, 1)
 			local t = aeMath.easings.cubicInOut(transition)
 
-			aeCamera.shaderUse("mesh")
-			aeCamera.shaderFloat("texGrade", t)
+			-- aeCamera.shaderUse("mesh")
+			-- aeCamera.shaderFloat("texGrade", t)
 			targetTS.angle.yaw = aeMath.lerp(transitionTS.angle.yaw, targetAngle.yaw, t)
 			targetTS.angle.pitch = aeMath.lerp(transitionTS.angle.pitch, targetAngle.pitch, t)
 			targetTS.angle.roll = aeMath.lerp(transitionTS.angle.roll, targetAngle.roll, t)
@@ -148,8 +188,8 @@ function connFN()
 			transition = aeMath.clamp(transition + aeWindow.dt(), 0, 1)
 			local t = aeMath.easings.cubicInOut(transition)
 
-			aeCamera.shaderUse("mesh")
-			aeCamera.shaderFloat("texGrade", t)
+			-- aeCamera.shaderUse("mesh")
+			-- aeCamera.shaderFloat("texGrade", t)
 			targetTS.angle.yaw = aeMath.lerp(transitionTS.angle.yaw, targetAngle.yaw, t)
 			targetTS.angle.pitch = aeMath.lerp(transitionTS.angle.pitch, targetAngle.pitch, t)
 			targetTS.angle.roll = aeMath.lerp(transitionTS.angle.roll, targetAngle.roll, t)

@@ -17,6 +17,14 @@ void World::init()
 		}
 		this->ents.clear();
 	}
+	if (!this->skeletons.empty())
+	{
+		for (auto s: this->skeletons)
+		{
+			delete s.second;
+		}
+		this->skeletons.clear();
+	}
 
 	if (this->state != nullptr)
 	{
@@ -139,6 +147,26 @@ void World::spawn(const char* id, const char* name)
 }
 
 lua_State* World::getScript() { return this->state; }
+
+void World::setSkeleton(const char* id, mesh::Skeleton* sk)
+{
+	this->skeletons.insert_or_assign(id, sk);
+}
+
+ae::mesh::Skeleton* World::getSkeleton(const char* id)
+{
+	auto t = this->skeletons.find(id);
+	if (t == this->skeletons.end()) return nullptr;
+	return t->second;
+}
+
+void World::destroySkeleton(const char* id)
+{
+	auto t = this->skeletons.find(id);
+	if (t == this->skeletons.end()) return;
+	delete t->second;
+	this->skeletons.erase(id);
+}
 
 Entity::Entity(ae::Window* win, const char* id, const char* path):
 	mesh(nullptr)
